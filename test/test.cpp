@@ -53,10 +53,19 @@ int main() {
     MyClass obj(5);
     auto res = tryRef(&obj);
     if (res.isOk()) {
-        MyClass& obj = res.unwrap();
+        auto& obj = res.unwrap();
+        static_assert(std::is_same_v<MyClass&, decltype(obj)>, "Type mismatch");
         std::cout << "Object is not null" << std::endl;
     } else {
         std::string err = res.unwrapErr();
+        std::cout << "Object is null" << std::endl;
+    }
+
+    auto res2 = tryRef(nullptr);
+    if (res2.isOkAnd([](MyClass& obj) { return true; })) {
+        std::cout << "Object is not null" << std::endl;
+    } else {
+        std::string err = res2.unwrapErr();
         std::cout << "Object is null" << std::endl;
     }
 }
