@@ -12,4 +12,6 @@ target_include_directories(GeodeResult INTERFACE
     $<INSTALL_INTERFACE:include>
 )
 
-add_subdirectory(test)
+if (PROJECT_IS_TOP_LEVEL)
+    add_subdirectory(test)
+endif()

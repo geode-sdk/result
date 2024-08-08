@@ -24,14 +24,20 @@ namespace geode {
     }
 
     template <class OkType>
-    impl::OkContainer<OkType> Ok(OkType&& ok);
+    inline impl::OkContainer<OkType> Ok(OkType&& ok);
 
     template <class ErrType>
-    impl::ErrContainer<ErrType> Err(ErrType&& err);
+    inline impl::ErrContainer<ErrType> Err(ErrType&& err);
 
-    impl::OkContainer<void> Ok();
+    template <class OkType>
+    inline impl::OkContainer<OkType&> Ok(OkType& ok);
 
-    impl::ErrContainer<void> Err();
+    template <class ErrType>
+    inline impl::ErrContainer<ErrType&> Err(ErrType& err);
+
+    inline impl::OkContainer<void> Ok();
+
+    inline impl::ErrContainer<void> Err();
 
     namespace impl {
         template <class OkType>
@@ -39,33 +45,39 @@ namespace geode {
         protected:
             OkType m_ok;
 
-        public:
-            OkContainer(OkType&& ok) : m_ok(std::move(ok)) {}
+            explicit OkContainer(OkType&& ok) 
+                noexcept(std::is_nothrow_constructible_v<OkType, OkType>)
+                : m_ok(std::forward<OkType>(ok)) {}
 
-            OkType unwrap() {
+        public:
+            OkType unwrap() noexcept(std::is_nothrow_move_constructible_v<OkType>) {
                 return std::move(m_ok);
             }
+
+            friend impl::OkContainer<OkType> geode::Ok<OkType>(OkType&& ok);
         };
 
         template <class OkType>
-        requires std::is_reference_v<OkType>
-        class OkContainer<OkType> final {
+        class OkContainer<OkType&> final {
         protected:
-            using ProtectedOkType = std::reference_wrapper<std::remove_reference_t<OkType>>;
-            ProtectedOkType m_ok;
+            OkType& m_ok;
+
+            explicit OkContainer(OkType& ok) noexcept : m_ok(ok) {}
 
         public:
-            OkContainer(OkType ok) : m_ok(ok) {}
-
-            ProtectedOkType unwrap() {
+            std::reference_wrapper<OkType> unwrap() noexcept {
                 return m_ok;
             }
+
+            friend impl::OkContainer<OkType&> geode::Ok<OkType>(OkType& ok);
         };
 
         template <>
         class OkContainer<void> final {
-        public:
-            OkContainer() {}
+        protected:
+            explicit OkContainer() {}
+
+            friend impl::OkContainer<void> geode::Ok();
         };
 
         template <class ErrType>
@@ -73,34 +85,39 @@ namespace geode {
         protected:
             ErrType m_err;
 
-        public:
-            ErrContainer(ErrType&& err) : m_err(std::move(err)) {}
+            explicit ErrContainer(ErrType&& err) 
+                noexcept(std::is_nothrow_constructible_v<ErrType, ErrType>)
+                : m_err(std::forward<ErrType>(err)) {}
 
-            ErrType unwrap() {
+        public:
+            ErrType unwrap() noexcept(std::is_nothrow_move_constructible_v<ErrType>) {
                 return std::move(m_err);
             }
+
+            friend impl::ErrContainer<ErrType> geode::Err<ErrType>(ErrType&& err);
         };
 
         template <class ErrType>
-        requires std::is_reference_v<ErrType>
-        class ErrContainer<ErrType> final {
+        class ErrContainer<ErrType&> final {
         protected:
-            using ProtectedErrType = std::reference_wrapper<std::remove_reference_t<ErrType>>;
+            ErrType& m_err;
 
-            ProtectedErrType m_err;
+            explicit ErrContainer(ErrType& err) noexcept : m_err(err) {}
 
         public:
-            ErrContainer(ErrType err) : m_err(err) {}
-
-            ProtectedErrType unwrap() {
+            std::reference_wrapper<ErrType> unwrap() noexcept {
                 return m_err;
             }
+
+            friend impl::ErrContainer<ErrType&> geode::Err<ErrType>(ErrType& err);
         };
 
         template <>
         class ErrContainer<void> final {
-        public:
-            ErrContainer() {}
+        protected:
+            explicit ErrContainer() {}
+
+            friend impl::ErrContainer<void> geode::Err();
         };
 
         template <class Type>
@@ -151,6 +168,16 @@ namespace geode {
         return impl::ErrContainer<ErrType>(std::forward<ErrType>(err));
     }
 
+    template <class OkType>
+    impl::OkContainer<OkType&> Ok(OkType& ok) {
+        return impl::OkContainer<OkType&>(ok);
+    }
+
+    template <class ErrType>
+    impl::ErrContainer<ErrType&> Err(ErrType& err) {
+        return impl::ErrContainer<ErrType&>(err);
+    }
+
     impl::OkContainer<void> Ok() {
         return impl::OkContainer<void>();
     }
@@ -178,6 +205,26 @@ namespace geode {
             ResultData(ResultData&& other) 
                 noexcept(std::is_nothrow_move_constructible_v<ProtectedOkType> && std::is_nothrow_move_constructible_v<ProtectedErrType>)
                 : m_data(std::move(other.m_data)) {}
+
+            OkContainer<OkType> asOk() noexcept
+                requires(!std::is_reference_v<OkType>) {
+                return Ok(std::move(std::get<0>(m_data)));
+            }
+
+            OkContainer<OkType&> asOk() noexcept
+                requires(std::is_reference_v<OkType>) {
+                return Ok(std::get<0>(m_data).get());
+            }
+
+            ErrContainer<ErrType> asErr() noexcept
+                requires(!std::is_reference_v<ErrType>) {
+                return Err(std::move(std::get<1>(m_data)));
+            }
+
+            ErrContainer<ErrType&> asErr() noexcept
+                requires(std::is_reference_v<ErrType>) {
+                return Err(std::get<1>(m_data).get());
+            }
             
         public:
             bool isOk() const noexcept {
@@ -208,7 +255,8 @@ namespace geode {
 
             Result<OkType const&, ErrType const&> asConst() const noexcept;
 
-            OkType unwrapOrDefault() noexcept(std::is_nothrow_default_constructible_v<OkType> && std::is_nothrow_move_constructible_v<OkType>) {
+            OkType unwrapOrDefault() noexcept(std::is_nothrow_default_constructible_v<OkType> && std::is_nothrow_move_constructible_v<OkType>) 
+                requires std::default_initializable<OkType> {
                 if (isOk()) {
                     return std::move(std::get<0>(m_data));
                 } else {
@@ -220,7 +268,7 @@ namespace geode {
                 if (isOk()) {
                     return std::move(std::get<0>(m_data));
                 } else {
-                    return std::move(defaultValue);
+                    return defaultValue;
                 }
             }
 
@@ -232,16 +280,18 @@ namespace geode {
                 }
             }
 
-            Result<std::remove_reference_t<OkType>, ErrType> copied() const noexcept(std::is_nothrow_copy_constructible_v<OkType>);
+            Result<std::remove_reference_t<OkType>, ErrType> copied() const 
+                noexcept(std::is_nothrow_copy_constructible_v<OkType>)
+                requires(std::is_reference_v<OkType>);
 
         protected:
-            void inspectInternal(std::invocable<OkType const&> auto&& operation) const noexcept(noexcept(operation(std::declval<OkType const&>))) {
+            void inspectInternal(std::invocable<OkType const&> auto&& operation) const noexcept(noexcept(operation(std::declval<OkType const&>()))) {
                 if (this->isOk()) {
                     operation(std::get<0>(m_data));
                 }
             }
 
-            void inspectInternalErr(std::invocable<ErrType const&> auto&& operation) const noexcept(noexcept(operation(std::declval<ErrType const&>))) {
+            void inspectInternalErr(std::invocable<ErrType const&> auto&& operation) const noexcept(noexcept(operation(std::declval<ErrType const&>()))) {
                 if (this->isErr()) {
                     operation(std::get<1>(m_data));
                 }
@@ -265,6 +315,20 @@ namespace geode {
 
             ResultData(ResultData&& other) noexcept(std::is_nothrow_move_constructible_v<ProtectedErrType>)
                 : m_data(std::move(other.m_data)) {}
+
+            OkContainer<void> asOk() noexcept {
+                return Ok();
+            }
+
+            ErrContainer<ErrType> asErr() noexcept
+                requires(!std::is_reference_v<ErrType>) {
+                return Err(std::move(std::get<1>(m_data)));
+            }
+
+            ErrContainer<ErrType&> asErr() noexcept
+                requires(std::is_reference_v<ErrType>) {
+                return Err(std::get<1>(m_data).get());
+            }
 
         public:
             bool isOk() const noexcept {
@@ -290,7 +354,7 @@ namespace geode {
             Result<void, ErrType> copied() const noexcept;
 
         protected:
-            void inspectInternalErr(std::invocable<ErrType const&> auto&& operation) const noexcept(noexcept(operation(std::declval<ErrType const&>))) {
+            void inspectInternalErr(std::invocable<ErrType const&> auto&& operation) const noexcept(noexcept(operation(std::declval<ErrType const&>()))) {
                 if (this->isErr()) {
                     operation(std::get<1>(m_data));
                 }
@@ -315,6 +379,20 @@ namespace geode {
             ResultData(ResultData&& other) noexcept(std::is_nothrow_move_constructible_v<ProtectedOkType>)
                 : m_data(std::move(other.m_data)) {}
 
+            OkContainer<OkType> asOk() noexcept
+                requires(!std::is_reference_v<OkType>) {
+                return Ok(std::move(std::get<0>(m_data)));
+            }
+
+            OkContainer<OkType&> asOk() noexcept
+                requires(std::is_reference_v<OkType>) {
+                return Ok(std::get<0>(m_data).get());
+            }
+
+            ErrContainer<void> asErr() noexcept {
+                return Err();
+            }
+
         public:
             bool isOk() const noexcept {
                 return m_data.index() == 0;
@@ -336,7 +414,8 @@ namespace geode {
 
             Result<OkType const&, void> asConst() const noexcept;
 
-            OkType unwrapOrDefault() noexcept(std::is_nothrow_default_constructible_v<OkType> && std::is_nothrow_move_constructible_v<OkType>) {
+            OkType unwrapOrDefault() noexcept(std::is_nothrow_default_constructible_v<OkType> && std::is_nothrow_move_constructible_v<OkType>)
+                requires std::default_initializable<OkType> {
                 if (isOk()) {
                     return std::move(std::get<0>(m_data));
                 } else {
@@ -348,7 +427,7 @@ namespace geode {
                 if (isOk()) {
                     return std::move(std::get<0>(m_data));
                 } else {
-                    return std::move(defaultValue);
+                    return defaultValue;
                 }
             }
 
@@ -360,10 +439,13 @@ namespace geode {
                 }
             }
 
-            Result<std::remove_reference_t<OkType>, void> copied() const noexcept(std::is_nothrow_copy_constructible_v<OkType>);
+            Result<std::remove_reference_t<OkType>, void> copied() const 
+                noexcept(std::is_nothrow_copy_constructible_v<OkType>)
+                requires(std::is_reference_v<OkType>);
 
         protected:
-            void inspectInternal(std::invocable<OkType const&> auto&& operation) const noexcept(noexcept(operation(std::declval<OkType const&>))) {
+            void inspectInternal(std::invocable<OkType const&> auto&& operation) const 
+                noexcept(noexcept(operation(std::declval<OkType const&>()))) {
                 if (this->isOk()) {
                     operation(std::get<0>(m_data));
                 }
@@ -376,24 +458,32 @@ namespace geode {
             std::variant<std::monostate, std::monostate> m_data;
 
             template <std::size_t Index>
-            ResultData(std::in_place_index_t<Index> index) noexcept : m_data(index) {}
+            inline ResultData(std::in_place_index_t<Index> index) noexcept : m_data(index) {}
 
-            ResultData(ResultData&& other) noexcept {}
+            inline ResultData(ResultData&& other) noexcept {}
+
+            inline OkContainer<void> asOk() noexcept {
+                return Ok();
+            }
+
+            inline ErrContainer<void> asErr() noexcept {
+                return Err();
+            }
 
         public:
-            bool isOk() const noexcept {
+            inline bool isOk() const noexcept {
                 return m_data.index() == 0;
             }
 
-            bool isErr() const noexcept {
+            inline bool isErr() const noexcept {
                 return m_data.index() == 1;
             }
 
-            Result<void, void> asRef() noexcept;
+            inline Result<void, void> asRef() noexcept;
 
-            Result<void, void> asConst() const noexcept;
+            inline Result<void, void> asConst() const noexcept;
 
-            Result<void, void> copied() const noexcept;
+            inline Result<void, void> copied() const noexcept;
         };
 
         template <class OkType, class ErrType>
@@ -452,13 +542,13 @@ namespace geode {
         template <>
         class ResultDataWrapper<void, void> : public ResultData<void, void> {
         public:
-            ResultDataWrapper(OkContainer<void>&& ok) 
+            inline ResultDataWrapper(OkContainer<void>&& ok) 
                 : ResultData<void, void>(std::in_place_index<0>) {}
 
-            ResultDataWrapper(ErrContainer<void>&& err) 
+            inline ResultDataWrapper(ErrContainer<void>&& err) 
                 : ResultData<void, void>(std::in_place_index<1>) {}
 
-            ResultDataWrapper(ResultDataWrapper&& other) noexcept(std::is_nothrow_move_constructible_v<ResultData<void, void>>)
+            inline ResultDataWrapper(ResultDataWrapper&& other) noexcept(std::is_nothrow_move_constructible_v<ResultData<void, void>>)
                 : ResultData<void, void>(std::move(other)) {}
         };
     }
@@ -467,6 +557,11 @@ namespace geode {
     class Result final : public impl::ResultDataWrapper<OkType, ErrType> {
     public:
         using impl::ResultDataWrapper<OkType, ErrType>::ResultDataWrapper;
+
+        Result() = delete;
+        Result(Result const& other) = delete;
+        Result(Result&& other) noexcept(std::is_nothrow_move_constructible_v<impl::ResultData<OkType, ErrType>>)
+            : impl::ResultDataWrapper<OkType, ErrType>(std::move(other)) {}
 
         bool isOkAnd(std::invocable<OkType> auto&& predicate) noexcept(noexcept(predicate(std::declval<OkType>()))) {
             return this->isOk() && predicate(std::forward<OkType>(this->unwrap()));
@@ -492,17 +587,31 @@ namespace geode {
             }
         }
 
-        template <class OkType2>
-        Result<OkType2, ErrType> map(std::invocable<OkType> auto&& operation) noexcept(noexcept(predicate(std::declval<OkType>())))  {
+        template <class Operation>
+        requires std::invocable<Operation, OkType>
+        Result<std::invoke_result_t<Operation, OkType>, ErrType> map(Operation&& operation) 
+            noexcept(noexcept(operation(std::declval<OkType>())))  {
             if (this->isOk()) {
                 return Ok(operation(std::forward<OkType>(this->unwrap())));
             } else {
-                return Err(this->unwrapErr());
+                return this->asErr();
+            }
+        }
+
+        template <class Operation>
+        requires std::invocable<Operation>
+        Result<std::invoke_result_t<Operation>, ErrType> map(Operation&& operation) 
+            noexcept(noexcept(operation())) {
+            if (this->isOk()) {
+                return Ok(operation());
+            } else {
+                return this->asErr();
             }
         }
 
         template <class OkType2>
-        OkType2 mapOr(OkType2&& defaultValue, std::invocable<OkType> auto&& operation) noexcept(noexcept(predicate(std::declval<OkType>()))) {
+        OkType2 mapOr(OkType2&& defaultValue, std::invocable<OkType> auto&& operation) 
+            noexcept(noexcept(operation(std::declval<OkType>()))) {
             if (this->isOk()) {
                 return operation(std::forward<OkType>(this->unwrap()));
             } else {
@@ -510,7 +619,18 @@ namespace geode {
             }
         }
 
-        auto mapOrElse(std::invocable<OkType> auto&& operation, std::invocable auto&& defaultValue) noexcept(noexcept(predicate(std::declval<OkType>()))) {
+        template <class OkType2>
+        OkType2 mapOr(OkType2&& defaultValue, std::invocable auto&& operation) 
+            noexcept(noexcept(operation())) {
+            if (this->isOk()) {
+                return operation();
+            } else {
+                return std::move(defaultValue);
+            }
+        }
+
+        auto mapOrElse(std::invocable auto&& defaultValue, std::invocable<OkType> auto&& operation) 
+            noexcept(noexcept(operation(std::declval<OkType>())) && noexcept(defaultValue())) {
             if (this->isOk()) {
                 return operation(std::forward<OkType>(this->unwrap()));
             } else {
@@ -518,21 +638,45 @@ namespace geode {
             }
         }
 
-        template <class ErrType2>
-        Result<OkType, ErrType2> mapErr(std::invocable<ErrType> auto&& operation) noexcept(noexcept(predicate(std::declval<ErrType>()))) {
+        auto mapOrElse(std::invocable auto&& defaultValue, std::invocable auto&& operation) 
+            noexcept(noexcept(operation()) && noexcept(defaultValue())) {
             if (this->isOk()) {
-                return Ok(this->unwrap());
+                return operation();
+            } else {
+                return defaultValue();
+            }
+        }
+
+        template <class Operation>
+        requires std::invocable<Operation, ErrType>
+        Result<OkType, std::invoke_result_t<Operation, ErrType>> mapErr(Operation&& operation) 
+            noexcept(noexcept(operation(std::declval<ErrType>()))) {
+            if (this->isOk()) {
+                return this->asOk();
             } else {
                 return Err(operation(std::forward<ErrType>(this->unwrapErr())));
             }
         }
 
-        Result<OkType, ErrType>& inspect(std::invocable<OkType const&> auto&& operation) const noexcept(noexcept(operation(std::declval<OkType const&>()))) {
+        template <class Operation>
+        requires std::invocable<Operation>
+        Result<OkType, std::invoke_result_t<Operation>> mapErr(Operation&& operation) 
+            noexcept(noexcept(operation())) {
+            if (this->isOk()) {
+                return this->asOk();
+            } else {
+                return Err(operation());
+            }
+        }
+
+        Result<OkType, ErrType>& inspect(std::invocable<OkType const&> auto&& operation) 
+            noexcept(noexcept(operation(std::declval<OkType const&>()))) {
             this->inspectInternal(operation);
             return *this;
         }
 
-        Result<OkType, ErrType>& inspectErr(std::invocable<ErrType const&> auto&& operation) const noexcept(noexcept(operation(std::declval<ErrType const&>()))) {
+        Result<OkType, ErrType>& inspectErr(std::invocable<ErrType const&> auto&& operation) 
+            noexcept(noexcept(operation(std::declval<ErrType const&>()))) {
             this->inspectInternalErr(operation);
             return *this;
         }
@@ -542,35 +686,58 @@ namespace geode {
             if (this->isOk()) {
                 return std::move(other);
             } else {
-                return Err(this->unwrapErr());
+                return this->asErr();
             }
         }
 
-        auto andThen(std::invocable<OkType> auto&& operation) noexcept(noexcept(operation(std::declval<OkType>()))) {
+        template <class Operation>
+        requires std::invocable<Operation, OkType>
+        std::invoke_result_t<Operation, OkType> andThen(Operation&& operation) noexcept(noexcept(operation(std::declval<OkType>()))) {
             if (this->isOk()) {
                 return operation(std::forward<OkType>(this->unwrap()));
             } else {
-                return Err(this->unwrapErr());
+                return this->asErr();
+            }
+        }
+
+        template <class Operation>
+        requires std::invocable<Operation>
+        std::invoke_result_t<Operation> andThen(Operation&& operation) noexcept(noexcept(operation())) {
+            if (this->isOk()) {
+                return operation();
+            } else {
+                return this->asErr();
             }
         }
 
         template <class ErrType2>
         Result<OkType, ErrType2> or_(Result<OkType, ErrType2>&& other) noexcept {
             if (this->isOk()) {
-                return Ok(this->unwrap());
+                return this->asOk();
             } else {
                 return std::move(other);
             }
         }
 
-        auto orElse(std::invocable<ErrType> auto&& operation) noexcept(noexcept(operation(std::declval<ErrType>()))) {
+        template <class Operation>
+        requires std::invocable<Operation, ErrType>
+        std::invoke_result_t<Operation, ErrType> orElse(Operation&& operation) noexcept(noexcept(operation(std::declval<ErrType>()))) {
             if (this->isOk()) {
-                return Ok(this->unwrap());
+                return this->asOk();
             } else {
                 return operation(std::forward<ErrType>(this->unwrapErr()));
             }
         }
 
+        template <class Operation>
+        requires std::invocable<Operation>
+        std::invoke_result_t<Operation> orElse(Operation&& operation) noexcept(noexcept(operation())) {
+            if (this->isOk()) {
+                return this->asOk();
+            } else {
+                return operation();
+            }
+        }
         
         std::optional<Result<impl::OptionalType<OkType>, ErrType>> transpose() 
             noexcept(std::is_nothrow_move_constructible_v<OkType> && std::is_nothrow_move_constructible_v<ErrType>) 
@@ -583,17 +750,17 @@ namespace geode {
                     return std::nullopt;
                 }
             } else {
-                return Err(this->unwrapErr());
+                return this->asErr();
             }
         }
 
-        Result<OkType, ErrType> flatten()
+        Result<impl::ResultOkType<OkType>, ErrType> flatten()
             noexcept(std::is_nothrow_move_constructible_v<OkType> && std::is_nothrow_move_constructible_v<ErrType>)
             requires(impl::IsResult<OkType> && std::same_as<ErrType, impl::ResultErrType<OkType>>) {
             if (this->isOk()) {
                 return this->unwrap();
             } else {
-                return Err(this->unwrapErr());
+                return this->asErr();
             }
         }
     };
@@ -670,9 +837,11 @@ namespace geode {
         }
 
         template <class OkType, class ErrType>
-        Result<std::remove_reference_t<OkType>, ErrType> ResultData<OkType, ErrType>::copied() const noexcept(std::is_nothrow_copy_constructible_v<OkType>) {
+        Result<std::remove_reference_t<OkType>, ErrType> ResultData<OkType, ErrType>::copied() const 
+            noexcept(std::is_nothrow_copy_constructible_v<OkType>)
+            requires(std::is_reference_v<OkType>) {
             if (this->isOk()) {
-                return Ok(std::get<0>(m_data));
+                return Ok(std::get<0>(m_data).get());
             } else {
                 return Err(std::get<1>(m_data));
             }
@@ -688,9 +857,11 @@ namespace geode {
         }
 
         template <class OkType>
-        Result<std::remove_reference_t<OkType>, void> ResultData<OkType, void>::copied() const noexcept(std::is_nothrow_copy_constructible_v<OkType>) {
+        Result<std::remove_reference_t<OkType>, void> ResultData<OkType, void>::copied() const 
+            noexcept(std::is_nothrow_copy_constructible_v<OkType>)
+            requires(std::is_reference_v<OkType>) {
             if (this->isOk()) {
-                return Ok(std::get<0>(m_data));
+                return Ok(std::get<0>(m_data).get());
             } else {
                 return Err();
             }
