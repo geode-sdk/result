@@ -158,30 +158,46 @@ namespace geode {
         using ResultErrType = typename IsResultImpl<Type>::ErrType;
     }
 
+    /// @brief Constructs a new Ok value
+    /// @param ok the value to wrap in an Ok
+    /// @return a new Ok value
     template <class OkType>
     impl::OkContainer<OkType> Ok(OkType&& ok) {
         return impl::OkContainer<OkType>(std::forward<OkType>(ok));
     }
-
+    
+    /// @brief Constructs a new Err value
+    /// @param err the value to wrap in an Err
+    /// @return a new Err value
     template <class ErrType>
     impl::ErrContainer<ErrType> Err(ErrType&& err) {
         return impl::ErrContainer<ErrType>(std::forward<ErrType>(err));
     }
 
+    /// @brief Constructs a new Ok value
+    /// @param ok the reference to wrap in an Ok
+    /// @return a new Ok value
     template <class OkType>
     impl::OkContainer<OkType&> Ok(OkType& ok) {
         return impl::OkContainer<OkType&>(ok);
     }
 
+    /// @brief Constructs a new Err value
+    /// @param err the reference to wrap in an Err
+    /// @return a new Err value
     template <class ErrType>
     impl::ErrContainer<ErrType&> Err(ErrType& err) {
         return impl::ErrContainer<ErrType&>(err);
     }
 
+    /// @brief Constructs a new void Ok value
+    /// @return a new void Ok value
     impl::OkContainer<void> Ok() {
         return impl::OkContainer<void>();
     }
 
+    /// @brief Constructs a new void Err value
+    /// @return a new void Err value
     impl::ErrContainer<void> Err() {
         return impl::ErrContainer<void>();
     }
@@ -227,14 +243,21 @@ namespace geode {
             }
             
         public:
+            /// @brief Returns true if the Result is Ok
+            /// @return true if the Result is Ok
             bool isOk() const noexcept {
                 return m_data.index() == 0;
             }
 
+            /// @brief Returns true if the Result is Err
+            /// @return true if the Result is Err
             bool isErr() const noexcept {
                 return m_data.index() == 1;
             }
 
+            /// @brief Unwraps the Ok value from the Result
+            /// @throw std::runtime_error if the Result is Err
+            /// @return the Ok value
             OkType unwrap() {
                 if (isOk()) {
                     return std::move(std::get<0>(m_data));
@@ -243,6 +266,9 @@ namespace geode {
                 }
             }
 
+            /// @brief Unwraps the Err value from the Result
+            /// @throw std::runtime_error if the Result is Ok
+            /// @return the Err value
             ErrType unwrapErr() {
                 if (isErr()) {
                     return std::move(std::get<1>(m_data));
@@ -251,10 +277,16 @@ namespace geode {
                 }
             }
 
+            /// @brief Returns a Result with references to the underlying values
+            /// @return a Result with references to the underlying values
             Result<OkType&, ErrType&> asRef() noexcept;
 
+            /// @brief Returns a Result with const references to the underlying values
+            /// @return a Result with const references to the underlying values
             Result<OkType const&, ErrType const&> asConst() const noexcept;
 
+            /// @brief Unwraps the Ok value from the Result, default constructing if unavailable
+            /// @return the Ok value if available, otherwise a default constructed Ok value
             OkType unwrapOrDefault() noexcept(std::is_nothrow_default_constructible_v<OkType> && std::is_nothrow_move_constructible_v<OkType>) 
                 requires std::default_initializable<OkType> {
                 if (isOk()) {
@@ -264,6 +296,9 @@ namespace geode {
                 }
             }
 
+            /// @brief Unwraps the Ok value from the Result, returning a default value if unavailable
+            /// @param defaultValue the default value to return if the Result is Err
+            /// @return the Ok value if available, otherwise the default value
             OkType unwrapOr(OkType&& defaultValue) noexcept(std::is_nothrow_move_constructible_v<OkType>) {
                 if (isOk()) {
                     return std::move(std::get<0>(m_data));
@@ -272,6 +307,9 @@ namespace geode {
                 }
             }
 
+            /// @brief Unwraps the Ok value from the Result, returning the result of an operation if unavailable
+            /// @param operation the operation to perform if the Result is Err
+            /// @return the Ok value if available, otherwise the result of the operation
             OkType unwrapOrElse(std::invocable auto&& operation) noexcept(std::is_nothrow_invocable_v<decltype(operation)>) {
                 if (isOk()) {
                     return std::move(std::get<0>(m_data));
@@ -280,6 +318,8 @@ namespace geode {
                 }
             }
 
+            /// @brief Returns a Result with a copied Ok value
+            /// @return a Result with a copied Ok value
             Result<std::remove_reference_t<OkType>, ErrType> copied() const 
                 noexcept(std::is_nothrow_copy_constructible_v<OkType>)
                 requires(std::is_reference_v<OkType>);
@@ -331,14 +371,21 @@ namespace geode {
             }
 
         public:
+            /// @brief Returns true if the Result is Ok
+            /// @return true if the Result is Ok
             bool isOk() const noexcept {
                 return m_data.index() == 0;
             }
 
+            /// @brief Returns true if the Result is Err
+            /// @return true if the Result is Err
             bool isErr() const noexcept {
                 return m_data.index() == 1;
             }
 
+            /// @brief Unwraps the Err value from the Result
+            /// @throw std::runtime_error if the Result is Ok
+            /// @return the Err value
             ErrType unwrapErr() {
                 if (isErr()) {
                     return std::move(std::get<1>(m_data));
@@ -347,10 +394,16 @@ namespace geode {
                 }
             }
 
+            /// @brief Returns a Result with references to the underlying values
+            /// @return a Result with references to the underlying values
             Result<void, ErrType&> asRef() noexcept;
 
+            /// @brief Returns a Result with const references to the underlying values
+            /// @return a Result with const references to the underlying values
             Result<void, ErrType const&> asConst() const noexcept;
 
+            /// @brief Returns a Result with a copied Ok value
+            /// @return a Result with a copied Ok value
             Result<void, ErrType> copied() const noexcept;
 
         protected:
@@ -394,14 +447,21 @@ namespace geode {
             }
 
         public:
+            /// @brief Returns true if the Result is Ok
+            /// @return true if the Result is Ok
             bool isOk() const noexcept {
                 return m_data.index() == 0;
             }
 
+            /// @brief Returns true if the Result is Err
+            /// @return true if the Result is Err
             bool isErr() const noexcept {
                 return m_data.index() == 1;
             }
 
+            /// @brief Unwraps the Ok value from the Result
+            /// @throw std::runtime_error if the Result is Err
+            /// @return the Ok value
             OkType unwrap() {
                 if (isOk()) {
                     return std::move(std::get<0>(m_data));
@@ -410,10 +470,16 @@ namespace geode {
                 }
             }
 
+            /// @brief Returns a Result with references to the underlying values
+            /// @return a Result with references to the underlying values
             Result<OkType&, void> asRef() noexcept;
 
+            /// @brief Returns a Result with const references to the underlying values
+            /// @return a Result with const references to the underlying values
             Result<OkType const&, void> asConst() const noexcept;
 
+            /// @brief Unwraps the Ok value from the Result, default constructing if unavailable
+            /// @return the Ok value if available, otherwise a default constructed Ok value
             OkType unwrapOrDefault() noexcept(std::is_nothrow_default_constructible_v<OkType> && std::is_nothrow_move_constructible_v<OkType>)
                 requires std::default_initializable<OkType> {
                 if (isOk()) {
@@ -423,6 +489,9 @@ namespace geode {
                 }
             }
 
+            /// @brief Unwraps the Ok value from the Result, returning a default value if unavailable
+            /// @param defaultValue the default value to return if the Result is Err
+            /// @return the Ok value if available, otherwise the default value
             OkType unwrapOr(OkType&& defaultValue) noexcept(std::is_nothrow_move_constructible_v<OkType>) {
                 if (isOk()) {
                     return std::move(std::get<0>(m_data));
@@ -431,6 +500,9 @@ namespace geode {
                 }
             }
 
+            /// @brief Unwraps the Ok value from the Result, returning the result of an operation if unavailable
+            /// @param operation the operation to perform if the Result is Err
+            /// @return the Ok value if available, otherwise the result of the operation
             OkType unwrapOrElse(std::invocable auto&& operation) noexcept(std::is_nothrow_invocable_v<decltype(operation)>) {
                 if (isOk()) {
                     return std::move(std::get<0>(m_data));
@@ -439,6 +511,8 @@ namespace geode {
                 }
             }
 
+            /// @brief Returns a Result with a copied Ok value
+            /// @return a Result with a copied Ok value
             Result<std::remove_reference_t<OkType>, void> copied() const 
                 noexcept(std::is_nothrow_copy_constructible_v<OkType>)
                 requires(std::is_reference_v<OkType>);
@@ -471,18 +545,28 @@ namespace geode {
             }
 
         public:
+            /// @brief Returns true if the Result is Ok
+            /// @return true if the Result is Ok
             inline bool isOk() const noexcept {
                 return m_data.index() == 0;
             }
 
+            /// @brief Returns true if the Result is Err
+            /// @return true if the Result is Err
             inline bool isErr() const noexcept {
                 return m_data.index() == 1;
             }
 
+            /// @brief Returns a Result with references to the underlying values
+            /// @return a Result with references to the underlying values
             inline Result<void, void> asRef() noexcept;
 
+            /// @brief Returns a Result with const references to the underlying values
+            /// @return a Result with const references to the underlying values
             inline Result<void, void> asConst() const noexcept;
 
+            /// @brief Returns a Result with a copied Ok value
+            /// @return a Result with a copied Ok value
             inline Result<void, void> copied() const noexcept;
         };
 
@@ -563,14 +647,22 @@ namespace geode {
         Result(Result&& other) noexcept(std::is_nothrow_move_constructible_v<impl::ResultData<OkType, ErrType>>)
             : impl::ResultDataWrapper<OkType, ErrType>(std::move(other)) {}
 
+        /// @brief Returns true if the Result is Ok and the Ok value satisfies the predicate
+        /// @param predicate the predicate to check the Ok value against
+        /// @return true if the Result is Ok and the Ok value satisfies the predicate
         bool isOkAnd(std::invocable<OkType> auto&& predicate) noexcept(noexcept(predicate(std::declval<OkType>()))) {
             return this->isOk() && predicate(std::forward<OkType>(this->unwrap()));
         }
 
+        /// @brief Returns true if the Result is Err and the Err value satisfies the predicate
+        /// @param predicate the predicate to check the Err value against
+        /// @return true if the Result is Err and the Err value satisfies the predicate
         bool isErrAnd(std::invocable<ErrType> auto&& predicate) noexcept(noexcept(predicate(std::declval<ErrType>()))) {
             return this->isErr() && predicate(std::forward<ErrType>(this->unwrapErr()));
         }
 
+        /// @brief Returns an std::optional containing the Ok value
+        /// @return an std::optional containing the Ok value if the Result is Ok, otherwise std::nullopt
         std::optional<OkType> ok() noexcept {
             if (this->isOk()) {
                 return this->unwrap();
@@ -579,6 +671,8 @@ namespace geode {
             }
         }
 
+        /// @brief Returns an std::optional containing the Err value
+        /// @return an std::optional containing the Err value if the Result is Err, otherwise std::nullopt
         std::optional<ErrType> err() noexcept {
             if (this->isErr()) {
                 return this->unwrapErr();
@@ -587,6 +681,9 @@ namespace geode {
             }
         }
 
+        /// @brief Maps the Ok value to a new Ok value using an operation
+        /// @param operation the operation to map the Ok value with
+        /// @return a new Result with the mapped Ok value if the Result is Ok, otherwise the Err value
         template <class Operation>
         requires std::invocable<Operation, OkType>
         Result<std::invoke_result_t<Operation, OkType>, ErrType> map(Operation&& operation) 
@@ -598,6 +695,9 @@ namespace geode {
             }
         }
 
+        /// @brief Maps the Ok value to a new Ok value using an operation
+        /// @param operation the operation to map the Ok value with
+        /// @return a new Result with the mapped Ok value if the Result is Ok, otherwise the Err value
         template <class Operation>
         requires std::invocable<Operation>
         Result<std::invoke_result_t<Operation>, ErrType> map(Operation&& operation) 
@@ -609,8 +709,13 @@ namespace geode {
             }
         }
 
-        template <class OkType2>
-        OkType2 mapOr(OkType2&& defaultValue, std::invocable<OkType> auto&& operation) 
+        /// @brief Maps the Ok value to a new value using an operation
+        /// @param defaultValue the default value to return if the Result is Err
+        /// @param operation the operation to map the Ok value with
+        /// @return the mapped Ok value if the Result is Ok, otherwise the default value
+        template <class OkType2, class Operation>
+        requires (std::invocable<Operation, OkType> && std::convertible_to<std::invoke_result_t<Operation, OkType>, OkType2>)
+        OkType2 mapOr(OkType2&& defaultValue, Operation&& operation) 
             noexcept(noexcept(operation(std::declval<OkType>()))) {
             if (this->isOk()) {
                 return operation(std::forward<OkType>(this->unwrap()));
@@ -619,8 +724,13 @@ namespace geode {
             }
         }
 
-        template <class OkType2>
-        OkType2 mapOr(OkType2&& defaultValue, std::invocable auto&& operation) 
+        /// @brief Maps the Ok value to a new value using an operation
+        /// @param defaultValue the default value to return if the Result is Err
+        /// @param operation the operation to map the Ok value with
+        /// @return the mapped Ok value if the Result is Ok, otherwise the default value
+        template <class OkType2, class Operation>
+        requires (std::invocable<Operation> && std::convertible_to<std::invoke_result_t<Operation>, OkType2>)
+        OkType2 mapOr(OkType2&& defaultValue, Operation&& operation) 
             noexcept(noexcept(operation())) {
             if (this->isOk()) {
                 return operation();
@@ -629,7 +739,14 @@ namespace geode {
             }
         }
 
-        auto mapOrElse(std::invocable auto&& defaultValue, std::invocable<OkType> auto&& operation) 
+        /// @brief Maps the Ok value to a new value using an operation
+        /// @param defaultValue the operation to perform if the Result is Err
+        /// @param operation the operation to map the Ok value with
+        /// @return the mapped Ok value if the Result is Ok, otherwise the result of the operation
+        template <class DefaultValue, class Operation>
+        requires (std::invocable<DefaultValue> && std::invocable<Operation, OkType> 
+            && std::convertible_to<std::invoke_result_t<DefaultValue>, std::invoke_result_t<Operation, OkType>>)
+        std::invoke_result_t<Operation, OkType> mapOrElse(DefaultValue&& defaultValue, Operation&& operation) 
             noexcept(noexcept(operation(std::declval<OkType>())) && noexcept(defaultValue())) {
             if (this->isOk()) {
                 return operation(std::forward<OkType>(this->unwrap()));
@@ -638,7 +755,14 @@ namespace geode {
             }
         }
 
-        auto mapOrElse(std::invocable auto&& defaultValue, std::invocable auto&& operation) 
+        /// @brief Maps the Ok value to a new value using an operation
+        /// @param defaultValue the operation to perform if the Result is Err
+        /// @param operation the operation to map the Ok value with
+        /// @return the mapped Ok value if the Result is Ok, otherwise the result of the operation
+        template <class DefaultValue, class Operation>
+        requires (std::invocable<DefaultValue> && std::invocable<Operation> 
+            && std::convertible_to<std::invoke_result_t<DefaultValue>, std::invoke_result_t<Operation>>)
+        std::invoke_result_t<Operation> mapOrElse(DefaultValue&& defaultValue, Operation&& operation) 
             noexcept(noexcept(operation()) && noexcept(defaultValue())) {
             if (this->isOk()) {
                 return operation();
@@ -647,6 +771,10 @@ namespace geode {
             }
         }
 
+
+        /// @brief Maps the Err value to a new Err value using an operation
+        /// @param operation the operation to map the Err value with
+        /// @return a new Result with the Ok value if the Result is Ok, otherwise the mapped Err value
         template <class Operation>
         requires std::invocable<Operation, ErrType>
         Result<OkType, std::invoke_result_t<Operation, ErrType>> mapErr(Operation&& operation) 
@@ -658,6 +786,9 @@ namespace geode {
             }
         }
 
+        /// @brief Maps the Err value to a new Err value using an operation
+        /// @param operation the operation to map the Err value with
+        /// @return a new Result with the Ok value if the Result is Ok, otherwise the mapped Err value
         template <class Operation>
         requires std::invocable<Operation>
         Result<OkType, std::invoke_result_t<Operation>> mapErr(Operation&& operation) 
@@ -669,18 +800,27 @@ namespace geode {
             }
         }
 
+        /// @brief Inspects the Ok value with an operation
+        /// @param operation the operation to call the Ok value with
+        /// @return the Result itself
         Result<OkType, ErrType>& inspect(std::invocable<OkType const&> auto&& operation) 
             noexcept(noexcept(operation(std::declval<OkType const&>()))) {
             this->inspectInternal(operation);
             return *this;
         }
 
+        /// @brief Inspects the Err value with an operation
+        /// @param operation the operation to call the Err value with
+        /// @return the Result itself
         Result<OkType, ErrType>& inspectErr(std::invocable<ErrType const&> auto&& operation) 
             noexcept(noexcept(operation(std::declval<ErrType const&>()))) {
             this->inspectInternalErr(operation);
             return *this;
         }
 
+        /// @brief Returns the other Result if this Result is Ok, otherwise returns this Result
+        /// @param other the other Result to return if this Result is Ok
+        /// @return the other Result if this Result is Ok, otherwise this Result
         template <class OkType2>
         Result<OkType2, ErrType> and_(Result<OkType2, ErrType>&& other) noexcept {
             if (this->isOk()) {
@@ -690,8 +830,12 @@ namespace geode {
             }
         }
 
+        /// @brief Returns the result of an operation if this Result is Ok, otherwise returns this Result
+        /// @param operation the operation to perform if this Result is Ok
+        /// @return the result of the operation if this Result is Ok, otherwise this Result
         template <class Operation>
-        requires std::invocable<Operation, OkType>
+        requires (std::invocable<Operation, OkType> && impl::IsResult<std::invoke_result_t<Operation, OkType>>
+            && std::convertible_to<ErrType, impl::ResultErrType<std::invoke_result_t<Operation, OkType>>>)
         std::invoke_result_t<Operation, OkType> andThen(Operation&& operation) noexcept(noexcept(operation(std::declval<OkType>()))) {
             if (this->isOk()) {
                 return operation(std::forward<OkType>(this->unwrap()));
@@ -700,8 +844,12 @@ namespace geode {
             }
         }
 
+        /// @brief Returns the result of an operation if this Result is Ok, otherwise returns this Result
+        /// @param operation the operation to perform if this Result is Ok
+        /// @return the result of the operation if this Result is Ok, otherwise this Result
         template <class Operation>
-        requires std::invocable<Operation>
+        requires (std::invocable<Operation> && impl::IsResult<std::invoke_result_t<Operation>>
+            && std::convertible_to<ErrType, impl::ResultErrType<std::invoke_result_t<Operation>>>)
         std::invoke_result_t<Operation> andThen(Operation&& operation) noexcept(noexcept(operation())) {
             if (this->isOk()) {
                 return operation();
@@ -710,6 +858,9 @@ namespace geode {
             }
         }
 
+        /// @brief Returns the other Result if this Result is Err, otherwise returns this Result
+        /// @param other the other Result to return if this Result is Err
+        /// @return the other Result if this Result is Err, otherwise this Result
         template <class ErrType2>
         Result<OkType, ErrType2> or_(Result<OkType, ErrType2>&& other) noexcept {
             if (this->isOk()) {
@@ -719,8 +870,12 @@ namespace geode {
             }
         }
 
+        /// @brief Returns the result of an operation if this Result is Err, otherwise returns this Result
+        /// @param operation the operation to perform if this Result is Err
+        /// @return the result of the operation if this Result is Err, otherwise this Result
         template <class Operation>
-        requires std::invocable<Operation, ErrType>
+        requires (std::invocable<Operation, ErrType> && impl::IsResult<std::invoke_result_t<Operation, ErrType>>
+            && std::convertible_to<OkType, impl::ResultOkType<std::invoke_result_t<Operation, ErrType>>>)
         std::invoke_result_t<Operation, ErrType> orElse(Operation&& operation) noexcept(noexcept(operation(std::declval<ErrType>()))) {
             if (this->isOk()) {
                 return this->asOk();
@@ -729,8 +884,12 @@ namespace geode {
             }
         }
 
+        /// @brief Returns the result of an operation if this Result is Err, otherwise returns this Result
+        /// @param operation the operation to perform if this Result is Err
+        /// @return the result of the operation if this Result is Err, otherwise this Result
         template <class Operation>
-        requires std::invocable<Operation>
+        requires (std::invocable<Operation> && impl::IsResult<std::invoke_result_t<Operation>>
+            && std::convertible_to<OkType, impl::ResultOkType<std::invoke_result_t<Operation>>>)
         std::invoke_result_t<Operation> orElse(Operation&& operation) noexcept(noexcept(operation())) {
             if (this->isOk()) {
                 return this->asOk();
@@ -739,6 +898,8 @@ namespace geode {
             }
         }
         
+        /// @brief Transposes the Result from Result<std::optional<OkType>, ErrType> to std::optional<Result<OkType, ErrType>>
+        /// @return std::nullopt if Ok value is empty, otherwise the Result wrapped in an optional
         std::optional<Result<impl::OptionalType<OkType>, ErrType>> transpose() 
             noexcept(std::is_nothrow_move_constructible_v<OkType> && std::is_nothrow_move_constructible_v<ErrType>) 
             requires(impl::IsOptional<OkType>) {
@@ -754,6 +915,8 @@ namespace geode {
             }
         }
 
+        /// @brief Flattens the Result from Result<Result<OkType, ErrType>, ErrType> to Result<OkType, ErrType>
+        /// @return the inner Result if the Result is Ok, otherwise the outer Result
         Result<impl::ResultOkType<OkType>, ErrType> flatten()
             noexcept(std::is_nothrow_move_constructible_v<OkType> && std::is_nothrow_move_constructible_v<ErrType>)
             requires(impl::IsResult<OkType> && std::same_as<ErrType, impl::ResultErrType<OkType>>) {
