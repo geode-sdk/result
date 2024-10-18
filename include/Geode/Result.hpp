@@ -5,6 +5,23 @@
 #include <variant>
 #include <optional>
 
+#if !defined(GEODE_CONCAT)
+    #define GEODE_CONCAT2(x, y) x##y
+    #define GEODE_CONCAT(...) GEODE_CONCAT2(__VA_ARGS__)
+#endif
+
+#if !defined(GEODE_UNWRAP)
+    #define GEODE_UNWRAP(...)                                   \
+    if (auto res = __VA_ARGS__; res.isErr()) return geode::Err(res.unwrapErr())
+#endif
+
+#if !defined (GEODE_UNWRAP_INTO)
+    #define GEODE_UNWRAP_INTO(variable, ...)                                             \
+    auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                                      \
+    if (GEODE_CONCAT(res, __LINE__).isErr()) return geode::Err(GEODE_CONCAT(res, __LINE__).unwrapErr()); \
+    variable = GEODE_CONCAT(res, __LINE__).unwrap()
+#endif
+
 namespace geode {
     template <class OkType, class ErrType>
     class Result;

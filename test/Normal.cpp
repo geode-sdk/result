@@ -13,6 +13,11 @@ Result<int, std::string> divide(int a, int b) {
     }
 }
 
+Result<float, std::string> divideFloat(float a, float b) {
+    GEODE_UNWRAP_INTO(auto res, divideFloat(a, b));
+    return Ok(res);
+}
+
 Result<std::optional<int>, std::string> divideOpt(int a, int b) {
     if (a == 0) {
         return Ok(std::nullopt);
