@@ -647,6 +647,12 @@ namespace geode {
         Result(Result&& other) noexcept(std::is_nothrow_move_constructible_v<impl::ResultData<OkType, ErrType>>)
             : impl::ResultDataWrapper<OkType, ErrType>(std::move(other)) {}
 
+        /// @brief Returns true if the Result is Ok
+        /// @return true if the Result is Ok
+        operator bool() const noexcept {
+            return this->isOk();
+        }
+
         /// @brief Returns true if the Result is Ok and the Ok value satisfies the predicate
         /// @param predicate the predicate to check the Ok value against
         /// @return true if the Result is Ok and the Ok value satisfies the predicate
