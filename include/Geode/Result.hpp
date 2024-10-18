@@ -638,7 +638,7 @@ namespace geode {
     }
 
     template <class OkType, class ErrType>
-    class Result final : public impl::ResultDataWrapper<OkType, ErrType> {
+    class [[nodiscard]] Result final : public impl::ResultDataWrapper<OkType, ErrType> {
     public:
         using impl::ResultDataWrapper<OkType, ErrType>::ResultDataWrapper;
 
