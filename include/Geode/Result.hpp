@@ -693,7 +693,7 @@ namespace geode {
 
         /// @brief Returns true if the Result is Ok
         /// @return true if the Result is Ok
-        operator bool() const noexcept {
+        explicit operator bool() const noexcept {
             return this->isOk();
         }
 
