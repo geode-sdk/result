@@ -7,7 +7,7 @@
 
 #if !defined(GEODE_CONCAT)
     #define GEODE_CONCAT2(x, y) x##y
-    #define GEODE_CONCAT(...) GEODE_CONCAT2(__VA_ARGS__)
+    #define GEODE_CONCAT(x, y) GEODE_CONCAT2(x, y)
 #endif
 
 #if !defined(GEODE_UNWRAP)
