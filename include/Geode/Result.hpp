@@ -11,8 +11,19 @@
 #endif
 
 #if !defined(GEODE_UNWRAP)
-    #define GEODE_UNWRAP(...)                                   \
-    if (auto res = __VA_ARGS__; res.isErr()) return geode::Err(res.unwrapErr())
+    // Use gcc's scope expression feature, which makes this macro
+    // really nice to use. Unfortunately not available on MSVC
+    #if defined(__GNUC__) || defined(__clang__)
+        #define GEODE_UNWRAP(...) ({                                        \
+            auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                 \
+            if (GEODE_CONCAT(res, __LINE__).isErr())                        \
+                return geode::Err(GEODE_CONCAT(res, __LINE__).unwrapErr()); \
+            GEODE_CONCAT(res, __LINE__).unwrap();                           \
+        })
+    #else
+        #define GEODE_UNWRAP(...)                                   \
+        if (auto res = __VA_ARGS__; res.isErr()) return geode::Err(res.unwrapErr())
+    #endif
 #endif
 
 #if !defined (GEODE_UNWRAP_INTO)
@@ -400,6 +411,14 @@ namespace geode {
                 return m_data.index() == 1;
             }
 
+            /// @brief Unwraps the Result
+            /// @throw std::runtime_error if the Result is Err
+            void unwrap() {
+                if (isErr()) {
+                    throw std::runtime_error("Called unwrap on an error Result");
+                }
+            }
+
             /// @brief Unwraps the Err value from the Result
             /// @throw std::runtime_error if the Result is Ok
             /// @return the Err value
@@ -572,6 +591,14 @@ namespace geode {
             /// @return true if the Result is Err
             inline bool isErr() const noexcept {
                 return m_data.index() == 1;
+            }
+
+            /// @brief Unwraps the Result
+            /// @throw std::runtime_error if the Result is Err
+            void unwrap() {
+                if (isErr()) {
+                    throw std::runtime_error("Called unwrap on an error Result");
+                }
             }
 
             /// @brief Returns a Result with references to the underlying values
