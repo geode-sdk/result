@@ -570,7 +570,7 @@ namespace geode {
             template <std::size_t Index>
             inline ResultData(std::in_place_index_t<Index> index) noexcept : m_data(index) {}
 
-            inline ResultData(ResultData&& other) noexcept {}
+            inline ResultData(ResultData&&) noexcept {}
 
             inline OkContainer<void> asOk() noexcept {
                 return Ok();
@@ -642,7 +642,7 @@ namespace geode {
                 noexcept(std::is_nothrow_constructible_v<ResultData<OkType, void>, std::in_place_index_t<0>, OkType2>)
                 : ResultData<OkType, void>(std::in_place_index<0>, std::move(ok.unwrap())) {}
 
-            ResultDataWrapper(ErrContainer<void>&& err) 
+            ResultDataWrapper(ErrContainer<void>&&)
                 noexcept(std::is_nothrow_constructible_v<ResultData<OkType, void>, std::in_place_index_t<1>>)
                 : ResultData<OkType, void>(std::in_place_index<1>) {}
 
@@ -659,7 +659,7 @@ namespace geode {
                 noexcept(std::is_nothrow_constructible_v<ResultData<void, ErrType>, std::in_place_index_t<1>, ErrType2>)
                 : ResultData<void, ErrType>(std::in_place_index<1>, std::move(err.unwrap())) {}
 
-            ResultDataWrapper(OkContainer<void>&& ok) 
+            ResultDataWrapper(OkContainer<void>&&)
                 noexcept(std::is_nothrow_constructible_v<ResultData<void, ErrType>, std::in_place_index_t<0>>)
                 : ResultData<void, ErrType>(std::in_place_index<0>) {}
 
@@ -670,10 +670,10 @@ namespace geode {
         template <>
         class ResultDataWrapper<void, void> : public ResultData<void, void> {
         public:
-            inline ResultDataWrapper(OkContainer<void>&& ok) 
+            inline ResultDataWrapper(OkContainer<void>&&)
                 : ResultData<void, void>(std::in_place_index<0>) {}
 
-            inline ResultDataWrapper(ErrContainer<void>&& err) 
+            inline ResultDataWrapper(ErrContainer<void>&&)
                 : ResultData<void, void>(std::in_place_index<1>) {}
 
             inline ResultDataWrapper(ResultDataWrapper&& other) noexcept(std::is_nothrow_move_constructible_v<ResultData<void, void>>)
