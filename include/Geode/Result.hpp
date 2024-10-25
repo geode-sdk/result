@@ -239,6 +239,7 @@ namespace geode {
             using ProtectedErrType = std::conditional_t<std::is_reference_v<ErrType>, std::reference_wrapper<std::remove_reference_t<ErrType>>, ErrType>;
 
             std::variant<ProtectedOkType, ProtectedErrType> m_data;
+            mutable bool m_checked = false;
 
             template <std::size_t Index, class ClassType>
             requires (Index == 0 ? std::constructible_from<ProtectedOkType, ClassType> : std::constructible_from<ProtectedErrType, ClassType>)
@@ -248,7 +249,7 @@ namespace geode {
 
             ResultData(ResultData&& other) 
                 noexcept(std::is_nothrow_move_constructible_v<ProtectedOkType> && std::is_nothrow_move_constructible_v<ProtectedErrType>)
-                : m_data(std::move(other.m_data)) {}
+                : m_data(std::move(other.m_data)), m_checked(other.m_checked) {}
 
             OkContainer<OkType> asOk() noexcept
                 requires(!std::is_reference_v<OkType>) {
@@ -274,12 +275,14 @@ namespace geode {
             /// @brief Returns true if the Result is Ok
             /// @return true if the Result is Ok
             bool isOk() const noexcept {
+                m_checked = true;
                 return m_data.index() == 0;
             }
 
             /// @brief Returns true if the Result is Err
             /// @return true if the Result is Err
             bool isErr() const noexcept {
+                m_checked = true;
                 return m_data.index() == 1;
             }
 
@@ -287,6 +290,9 @@ namespace geode {
             /// @throw std::runtime_error if the Result is Err
             /// @return the Ok value
             OkType unwrap() {
+                if (!m_checked) {
+                    throw std::runtime_error("Validity of the Result not checked");
+                }
                 if (isOk()) {
                     return std::move(std::get<0>(m_data));
                 } else {
@@ -298,6 +304,9 @@ namespace geode {
             /// @throw std::runtime_error if the Result is Ok
             /// @return the Err value
             ErrType unwrapErr() {
+                if (!m_checked) {
+                    throw std::runtime_error("Validity of the Result not checked");
+                }
                 if (isErr()) {
                     return std::move(std::get<1>(m_data));
                 } else {
@@ -371,6 +380,7 @@ namespace geode {
         protected:
             using ProtectedErrType = std::conditional_t<std::is_reference_v<ErrType>, std::reference_wrapper<std::remove_reference_t<ErrType>>, ErrType>;
             std::variant<std::monostate, ProtectedErrType> m_data;
+            mutable bool m_checked = false;
 
             template <std::size_t Index, class ClassType>
             requires std::constructible_from<ErrType, ClassType>
@@ -382,7 +392,7 @@ namespace geode {
             ResultData(std::in_place_index_t<Index> index) noexcept : m_data(index) {}
 
             ResultData(ResultData&& other) noexcept(std::is_nothrow_move_constructible_v<ProtectedErrType>)
-                : m_data(std::move(other.m_data)) {}
+                : m_data(std::move(other.m_data)), m_checked(other.m_checked) {}
 
             OkContainer<void> asOk() noexcept {
                 return Ok();
@@ -402,18 +412,23 @@ namespace geode {
             /// @brief Returns true if the Result is Ok
             /// @return true if the Result is Ok
             bool isOk() const noexcept {
+                m_checked = true;
                 return m_data.index() == 0;
             }
 
             /// @brief Returns true if the Result is Err
             /// @return true if the Result is Err
             bool isErr() const noexcept {
+                m_checked = true;
                 return m_data.index() == 1;
             }
 
             /// @brief Unwraps the Result
             /// @throw std::runtime_error if the Result is Err
             void unwrap() {
+                if (!m_checked) {
+                    throw std::runtime_error("Validity of the Result not checked");
+                }
                 if (isErr()) {
                     throw std::runtime_error("Called unwrap on an error Result");
                 }
@@ -423,6 +438,9 @@ namespace geode {
             /// @throw std::runtime_error if the Result is Ok
             /// @return the Err value
             ErrType unwrapErr() {
+                if (!m_checked) {
+                    throw std::runtime_error("Validity of the Result not checked");
+                }
                 if (isErr()) {
                     return std::move(std::get<1>(m_data));
                 } else {
@@ -455,6 +473,7 @@ namespace geode {
         protected:
             using ProtectedOkType = std::conditional_t<std::is_reference_v<OkType>, std::reference_wrapper<std::remove_reference_t<OkType>>, OkType>;
             std::variant<ProtectedOkType, std::monostate> m_data;
+            mutable bool m_checked = false;
 
             template <std::size_t Index, class ClassType>
             requires std::constructible_from<OkType, ClassType>
@@ -466,7 +485,7 @@ namespace geode {
             ResultData(std::in_place_index_t<Index> index) noexcept : m_data(index) {}
 
             ResultData(ResultData&& other) noexcept(std::is_nothrow_move_constructible_v<ProtectedOkType>)
-                : m_data(std::move(other.m_data)) {}
+                : m_data(std::move(other.m_data)), m_checked(other.m_checked) {}
 
             OkContainer<OkType> asOk() noexcept
                 requires(!std::is_reference_v<OkType>) {
@@ -486,12 +505,14 @@ namespace geode {
             /// @brief Returns true if the Result is Ok
             /// @return true if the Result is Ok
             bool isOk() const noexcept {
+                m_checked = true;
                 return m_data.index() == 0;
             }
 
             /// @brief Returns true if the Result is Err
             /// @return true if the Result is Err
             bool isErr() const noexcept {
+                m_checked = true;
                 return m_data.index() == 1;
             }
 
@@ -499,10 +520,24 @@ namespace geode {
             /// @throw std::runtime_error if the Result is Err
             /// @return the Ok value
             OkType unwrap() {
+                if (!m_checked) {
+                    throw std::runtime_error("Validity of the Result not checked");
+                }
                 if (isOk()) {
                     return std::move(std::get<0>(m_data));
                 } else {
                     throw std::runtime_error("Called unwrap on an error Result");
+                }
+            }
+
+            /// @brief Unwraps the Err value from the Result
+            /// @throw std::runtime_error if the Result is Ok
+            void unwrapErr() {
+                if (!m_checked) {
+                    throw std::runtime_error("Validity of the Result not checked");
+                }
+                if (isOk()) {
+                    throw std::runtime_error("Called unwrapErr on an ok Result");
                 }
             }
 
@@ -566,11 +601,13 @@ namespace geode {
         class ResultData<void, void> {
         protected:
             std::variant<std::monostate, std::monostate> m_data;
+            mutable bool m_checked = false;
 
             template <std::size_t Index>
             inline ResultData(std::in_place_index_t<Index> index) noexcept : m_data(index) {}
 
-            inline ResultData(ResultData&&) noexcept {}
+            inline ResultData(ResultData&&) noexcept
+                : m_data(std::move(other.m_data)), m_checked(other.m_checked) {}
 
             inline OkContainer<void> asOk() noexcept {
                 return Ok();
@@ -584,20 +621,36 @@ namespace geode {
             /// @brief Returns true if the Result is Ok
             /// @return true if the Result is Ok
             inline bool isOk() const noexcept {
+                m_checked = true;
                 return m_data.index() == 0;
             }
 
             /// @brief Returns true if the Result is Err
             /// @return true if the Result is Err
             inline bool isErr() const noexcept {
+                m_checked = true;
                 return m_data.index() == 1;
             }
 
             /// @brief Unwraps the Result
             /// @throw std::runtime_error if the Result is Err
             void unwrap() {
+                if (!m_checked) {
+                    throw std::runtime_error("Validity of the Result not checked");
+                }
                 if (isErr()) {
                     throw std::runtime_error("Called unwrap on an error Result");
+                }
+            }
+
+            /// @brief Unwraps the Err value from the Result
+            /// @throw std::runtime_error if the Result is Ok
+            void unwrapErr() {
+                if (!m_checked) {
+                    throw std::runtime_error("Validity of the Result not checked");
+                }
+                if (isOk()) {
+                    throw std::runtime_error("Called unwrapErr on an ok Result");
                 }
             }
 
