@@ -5,6 +5,7 @@
     #include <concepts>
     #include <optional>
     #include <stdexcept>
+    #include <string>
     #include <utility>
     #include <variant>
 
@@ -763,7 +764,7 @@ namespace geode {
         };
     }
 
-    template <class OkType, class ErrType>
+    template <class OkType = void, class ErrType = std::string>
     class [[nodiscard]] Result final : public impl::ResultDataWrapper<OkType, ErrType> {
     public:
         using impl::ResultDataWrapper<OkType, ErrType>::ResultDataWrapper;
