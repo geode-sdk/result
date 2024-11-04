@@ -8,7 +8,8 @@ using namespace geode;
 Result<int, std::string> divide(int a, int b) {
     if (b == 0) {
         return Err("Division by zero");
-    } else {
+    }
+    else {
         return Ok(a / b);
     }
 }
@@ -24,7 +25,8 @@ Result<std::optional<int>, std::string> divideOpt(int a, int b) {
     }
     else if (b == 0) {
         return Err("Division by zero");
-    } else {
+    }
+    else {
         return Ok(std::optional<int>(a / b));
     }
 }
@@ -92,56 +94,88 @@ TEST_CASE("Normal") {
 
     SECTION("unwrapOrElse") {
         auto res = divide(32, 2);
-        REQUIRE(res.unwrapOrElse([]() { return -64; }) == 16);
+        REQUIRE(res.unwrapOrElse([]() {
+            return -64;
+        }) == 16);
 
         auto res2 = divide(32, 0);
-        REQUIRE(res2.unwrapOrElse([]() { return -64; }) == -64);
+        REQUIRE(res2.unwrapOrElse([]() {
+            return -64;
+        }) == -64);
     }
 
     SECTION("map") {
         auto res = divide(32, 2);
-        auto res2 = res.map([](int a) { return a / 2; });
+        auto res2 = res.map([](int a) {
+            return a / 2;
+        });
         REQUIRE(res2.unwrap() == 8);
     }
 
     SECTION("mapOr") {
         auto res = divide(32, 2);
-        auto res2 = res.mapOr(0, [](int a) { return a / 2; });
+        auto res2 = res.mapOr(0, [](int a) {
+            return a / 2;
+        });
         REQUIRE(res2 == 8);
 
         auto res3 = divide(32, 0);
-        auto res4 = res3.mapOr(0, [](int a) { return a / 2; });
+        auto res4 = res3.mapOr(0, [](int a) {
+            return a / 2;
+        });
         REQUIRE(res4 == 0);
     }
 
     SECTION("mapOrElse") {
         auto res = divide(32, 2);
-        auto res2 = res.mapOrElse([]() { return 0; }, [](int a) { return a / 2; });
+        auto res2 = res.mapOrElse(
+            []() {
+                return 0;
+            },
+            [](int a) {
+                return a / 2;
+            }
+        );
         REQUIRE(res2 == 8);
 
         auto res3 = divide(32, 0);
-        auto res4 = res3.mapOrElse([]() { return 0; }, [](int a) { return a / 2; });
+        auto res4 = res3.mapOrElse(
+            []() {
+                return 0;
+            },
+            [](int a) {
+                return a / 2;
+            }
+        );
         REQUIRE(res4 == 0);
     }
 
     SECTION("mapErr") {
         auto res = divide(32, 2);
-        auto res2 = res.mapErr([](std::string s) { return s + " mapped"; });
+        auto res2 = res.mapErr([](std::string s) {
+            return s + " mapped";
+        });
         REQUIRE(res2.unwrap() == 16);
 
         auto res3 = divide(32, 0);
-        auto res4 = res3.mapErr([](std::string s) { return s + " mapped"; });
+        auto res4 = res3.mapErr([](std::string s) {
+            return s + " mapped";
+        });
         REQUIRE(res4.unwrapErr() == "Division by zero mapped");
     }
 
     SECTION("inspect") {
         auto res = divide(32, 2);
-        res.inspect([](int const& a) { REQUIRE(a == 16); });
+        res.inspect([](int const& a) {
+            REQUIRE(a == 16);
+        });
     }
 
     SECTION("inspectErr") {
         auto res = divide(32, 0);
-        res.inspectErr([](std::string const& s) { REQUIRE(s == "Division by zero"); });
+        res.inspectErr([](std::string const& s) {
+            REQUIRE(s == "Division by zero");
+        });
     }
 
     SECTION("and_") {
@@ -158,15 +192,21 @@ TEST_CASE("Normal") {
 
     SECTION("andThen") {
         auto res = divide(32, 2);
-        auto res2 = res.andThen([](int a) { return divide(a, 2); });
+        auto res2 = res.andThen([](int a) {
+            return divide(a, 2);
+        });
         REQUIRE(res2.unwrap() == 8);
 
         auto res3 = divide(32, 0);
-        auto res4 = res3.andThen([](int a) { return divide(a, 2); });
+        auto res4 = res3.andThen([](int a) {
+            return divide(a, 2);
+        });
         REQUIRE(res4.unwrapErr() == "Division by zero");
 
         auto res5 = divide(32, 2);
-        auto res6 = res5.andThen([](int a) { return divide(a, 0); });
+        auto res6 = res5.andThen([](int a) {
+            return divide(a, 0);
+        });
         REQUIRE(res6.unwrapErr() == "Division by zero");
     }
 
@@ -184,15 +224,21 @@ TEST_CASE("Normal") {
 
     SECTION("orElse") {
         auto res = divide(32, 2);
-        auto res2 = res.orElse([](std::string error) { return divide(32, 0); });
+        auto res2 = res.orElse([](std::string error) {
+            return divide(32, 0);
+        });
         REQUIRE(res2.unwrap() == 16);
 
         auto res3 = divide(32, 0);
-        auto res4 = res3.orElse([](std::string error) { return divide(32, 0); });
+        auto res4 = res3.orElse([](std::string error) {
+            return divide(32, 0);
+        });
         REQUIRE(res4.unwrapErr() == "Division by zero");
 
         auto res5 = divide(32, 0);
-        auto res6 = res5.orElse([](std::string error) { return divide(32, 2); });
+        auto res6 = res5.orElse([](std::string error) {
+            return divide(32, 2);
+        });
         REQUIRE(res6.unwrap() == 16);
     }
 

@@ -8,6 +8,7 @@ using namespace geode;
 class IntWrapper {
 public:
     IntWrapper(int value) : value(value) {}
+
     IntWrapper(IntWrapper const& other) = delete;
     IntWrapper(IntWrapper&& other) = default;
     IntWrapper& operator=(IntWrapper const& other) = delete;
@@ -19,7 +20,8 @@ public:
 Result<IntWrapper, std::string> divideWrapper(int a, int b) {
     if (b == 0) {
         return Err("Division by zero");
-    } else {
+    }
+    else {
         return Ok(IntWrapper(a / b));
     }
 }
@@ -71,56 +73,94 @@ TEST_CASE("MoveOnly") {
 
     SECTION("unwrapOrElse") {
         auto res = divideWrapper(32, 2);
-        REQUIRE(res.unwrapOrElse([]() { return IntWrapper(-64); }).value == 16);
+        REQUIRE(
+            res.unwrapOrElse([]() {
+                   return IntWrapper(-64);
+               }
+            ).value == 16
+        );
 
         auto res2 = divideWrapper(32, 0);
-        REQUIRE(res2.unwrapOrElse([]() { return IntWrapper(-64); }).value == -64);
+        REQUIRE(
+            res2.unwrapOrElse([]() {
+                    return IntWrapper(-64);
+                }
+            ).value == -64
+        );
     }
 
     SECTION("map") {
         auto res = divideWrapper(32, 2);
-        auto res2 = res.map([](IntWrapper a) { return IntWrapper(a.value / 2); });
+        auto res2 = res.map([](IntWrapper a) {
+            return IntWrapper(a.value / 2);
+        });
         REQUIRE(res2.unwrap().value == 8);
     }
 
     SECTION("mapOr") {
         auto res = divideWrapper(32, 2);
-        auto res2 = res.mapOr(IntWrapper(0), [](IntWrapper a) { return IntWrapper(a.value / 2); });
+        auto res2 = res.mapOr(IntWrapper(0), [](IntWrapper a) {
+            return IntWrapper(a.value / 2);
+        });
         REQUIRE(res2.value == 8);
 
         auto res3 = divideWrapper(32, 0);
-        auto res4 = res3.mapOr(IntWrapper(0), [](IntWrapper a) { return IntWrapper(a.value / 2); });
+        auto res4 = res3.mapOr(IntWrapper(0), [](IntWrapper a) {
+            return IntWrapper(a.value / 2);
+        });
         REQUIRE(res4.value == 0);
     }
 
     SECTION("mapOrElse") {
         auto res = divideWrapper(32, 2);
-        auto res2 = res.mapOrElse([]() { return IntWrapper(0); }, [](IntWrapper a) { return IntWrapper(a.value / 2); });
+        auto res2 = res.mapOrElse(
+            []() {
+                return IntWrapper(0);
+            },
+            [](IntWrapper a) {
+                return IntWrapper(a.value / 2);
+            }
+        );
         REQUIRE(res2.value == 8);
 
         auto res3 = divideWrapper(32, 0);
-        auto res4 = res3.mapOrElse([]() { return IntWrapper(0); }, [](IntWrapper a) { return IntWrapper(a.value / 2); });
+        auto res4 = res3.mapOrElse(
+            []() {
+                return IntWrapper(0);
+            },
+            [](IntWrapper a) {
+                return IntWrapper(a.value / 2);
+            }
+        );
         REQUIRE(res4.value == 0);
     }
 
     SECTION("mapErr") {
         auto res = divideWrapper(32, 2);
-        auto res2 = res.mapErr([](std::string s) { return s + " mapped"; });
+        auto res2 = res.mapErr([](std::string s) {
+            return s + " mapped";
+        });
         REQUIRE(res2.unwrap().value == 16);
 
         auto res3 = divideWrapper(32, 0);
-        auto res4 = res3.mapErr([](std::string s) { return s + " mapped"; });
+        auto res4 = res3.mapErr([](std::string s) {
+            return s + " mapped";
+        });
         REQUIRE(res4.unwrapErr() == "Division by zero mapped");
     }
 
     SECTION("inspect") {
         auto res = divideWrapper(32, 2);
-        res.inspect([](IntWrapper const& a) { REQUIRE(a.value == 16); });
+        res.inspect([](IntWrapper const& a) {
+            REQUIRE(a.value == 16);
+        });
     }
 
     SECTION("inspectErr") {
         auto res = divideWrapper(32, 0);
-        res.inspectErr([](std::string const& s) { REQUIRE(s == "Division by zero"); });
+        res.inspectErr([](std::string const& s) {
+            REQUIRE(s == "Division by zero");
+        });
     }
 
     SECTION("and_") {
@@ -137,15 +177,21 @@ TEST_CASE("MoveOnly") {
 
     SECTION("andThen") {
         auto res = divideWrapper(32, 2);
-        auto res2 = res.andThen([](IntWrapper a) { return divideWrapper(a.value, 2); });
+        auto res2 = res.andThen([](IntWrapper a) {
+            return divideWrapper(a.value, 2);
+        });
         REQUIRE(res2.unwrap().value == 8);
 
         auto res3 = divideWrapper(32, 0);
-        auto res4 = res3.andThen([](IntWrapper a) { return divideWrapper(a.value, 2); });
+        auto res4 = res3.andThen([](IntWrapper a) {
+            return divideWrapper(a.value, 2);
+        });
         REQUIRE(res4.unwrapErr() == "Division by zero");
 
         auto res5 = divideWrapper(32, 2);
-        auto res6 = res5.andThen([](IntWrapper a) { return divideWrapper(a.value, 0); });
+        auto res6 = res5.andThen([](IntWrapper a) {
+            return divideWrapper(a.value, 0);
+        });
         REQUIRE(res6.unwrapErr() == "Division by zero");
     }
 
@@ -163,15 +209,21 @@ TEST_CASE("MoveOnly") {
 
     SECTION("orElse") {
         auto res = divideWrapper(32, 2);
-        auto res2 = res.orElse([](std::string error) { return divideWrapper(32, 0); });
+        auto res2 = res.orElse([](std::string error) {
+            return divideWrapper(32, 0);
+        });
         REQUIRE(res2.unwrap().value == 16);
 
         auto res3 = divideWrapper(32, 0);
-        auto res4 = res3.orElse([](std::string error) { return divideWrapper(32, 0); });
+        auto res4 = res3.orElse([](std::string error) {
+            return divideWrapper(32, 0);
+        });
         REQUIRE(res4.unwrapErr() == "Division by zero");
 
         auto res5 = divideWrapper(32, 0);
-        auto res6 = res5.orElse([](std::string error) { return divideWrapper(32, 2); });
+        auto res6 = res5.orElse([](std::string error) {
+            return divideWrapper(32, 2);
+        });
         REQUIRE(res6.unwrap().value == 16);
     }
 }

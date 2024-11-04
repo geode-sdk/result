@@ -8,7 +8,8 @@ using namespace geode;
 Result<int const&, std::string> divideConstRef(int a, int b) {
     if (b == 0) {
         return Err("Division by zero");
-    } else {
+    }
+    else {
         static int res = a / b;
         return Ok(res);
     }
@@ -18,7 +19,8 @@ Result<int, std::string const&> divideErrRef(int a, int b) {
     if (b == 0) {
         static std::string err = "Division by zero";
         return Err(err);
-    } else {
+    }
+    else {
         return Ok(a / b);
     }
 }
@@ -27,7 +29,8 @@ Result<int const&, std::string const&> divideConstRefErrRef(int a, int b) {
     if (b == 0) {
         static std::string err = "Division by zero";
         return Err(err);
-    } else {
+    }
+    else {
         static int res = a / b;
         return Ok(res);
     }
@@ -36,7 +39,8 @@ Result<int const&, std::string const&> divideConstRefErrRef(int a, int b) {
 Result<int, void> divideVoidErr(int a, int b) {
     if (b == 0) {
         return Err();
-    } else {
+    }
+    else {
         return Ok(a / b);
     }
 }
@@ -44,7 +48,8 @@ Result<int, void> divideVoidErr(int a, int b) {
 Result<void, void> divideVoidOkVoidErr(int a, int b) {
     if (b == 0) {
         return Err();
-    } else {
+    }
+    else {
         return Ok();
     }
 }
