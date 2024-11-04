@@ -151,4 +151,30 @@ TEST_CASE("Misc") {
             static_assert(divideConstexpr(32, 0).unwrapErr() == -1, "Expected error code to be -1");
         }
     }
+
+    SECTION("Exceptions") {
+        SECTION("Ok") {
+            auto res = divideConstexpr(32, 2);
+            REQUIRE_NOTHROW(res.unwrap());
+            try {
+                res.unwrapErr();
+                FAIL("Expected UnwrapException to be thrown");
+            }
+            catch (UnwrapException const& e) {
+                REQUIRE(e.what() == std::string("Called unwrapErr on an Ok Result: 16"));
+            }
+        }
+
+        SECTION("Err") {
+            auto res = divideConstexpr(32, 0);
+            REQUIRE_NOTHROW(res.unwrapErr());
+            try {
+                res.unwrap();
+                FAIL("Expected UnwrapException to be thrown");
+            }
+            catch (UnwrapException const& e) {
+                REQUIRE(e.what() == std::string("Called unwrap on an Err Result: -1"));
+            }
+        }
+    }
 }
