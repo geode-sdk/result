@@ -85,6 +85,9 @@ namespace geode {
             }
 
             friend impl::OkContainer<OkType> geode::Ok<OkType>(OkType&& ok);
+
+            template <class OkType2, class ErrType2>
+            friend class geode::Result;
         };
 
         template <class OkType>
@@ -100,14 +103,22 @@ namespace geode {
             }
 
             friend impl::OkContainer<OkType&> geode::Ok<OkType>(OkType& ok);
+
+            template <class OkType2, class ErrType2>
+            friend class geode::Result;
         };
 
         template <>
         class OkContainer<void> final {
         protected:
+            std::monostate m_ok;
+
             explicit OkContainer() {}
 
             friend impl::OkContainer<void> geode::Ok();
+
+            template <class OkType2, class ErrType2>
+            friend class geode::Result;
         };
 
         template <class ErrType>
@@ -125,6 +136,9 @@ namespace geode {
             }
 
             friend impl::ErrContainer<ErrType> geode::Err<ErrType>(ErrType&& err);
+
+            template <class OkType2, class ErrType2>
+            friend class geode::Result;
         };
 
         template <class ErrType>
@@ -140,14 +154,22 @@ namespace geode {
             }
 
             friend impl::ErrContainer<ErrType&> geode::Err<ErrType>(ErrType& err);
+
+            template <class OkType2, class ErrType2>
+            friend class geode::Result;
         };
 
         template <>
         class ErrContainer<void> final {
         protected:
+            std::monostate m_err;
+
             explicit ErrContainer() {}
 
             friend impl::ErrContainer<void> geode::Err();
+
+            template <class OkType2, class ErrType2>
+            friend class geode::Result;
         };
 
         template <class Type>
@@ -753,6 +775,66 @@ namespace geode {
             return this->isOk();
         }
 
+        /// @brief Returns true if the Result is equal to another Result
+        /// @param other the Result to compare against
+        /// @return true if the Results are equal
+        template <class OkType2, class ErrType2>
+        bool operator==(Result<OkType2, ErrType2> const& other) const noexcept {
+            if (this->isOk() && other.isOk()) {
+                return std::get<0>(this->m_data) == std::get<0>(other.m_data);
+            }
+            else if (this->isErr() && other.isErr()) {
+                return std::get<1>(this->m_data) == std::get<1>(other.m_data);
+            }
+            return false;
+        }
+
+        /// @brief Returns true if the Result is equal to an Ok value
+        /// @param other the Ok value to compare against
+        /// @return true if the Result is Ok and the Ok value is equal
+        template <class OkType2>
+        bool operator==(impl::OkContainer<OkType2> const& other) const noexcept {
+            if (this->isOk()) {
+                return std::get<0>(this->m_data) == other.m_ok;
+            }
+            return false;
+        }
+
+        /// @brief Returns true if the Result is equal to an Err value
+        /// @param other the Err value to compare against
+        /// @return true if the Result is Err and the Err value is equal
+        template <class ErrType2>
+        bool operator==(impl::ErrContainer<ErrType2> const& other) const noexcept {
+            if (this->isErr()) {
+                return std::get<1>(this->m_data) == other.m_err;
+            }
+            return false;
+        }
+
+        /// @brief Returns true if the Result is not equal to another Result
+        /// @param other the Result to compare against
+        /// @return true if the Results are not equal
+        template <class OkType2, class ErrType2>
+        bool operator!=(Result<OkType2, ErrType2> const& other) const noexcept {
+            return !(*this == other);
+        }
+
+        /// @brief Returns true if the Result is not equal to an Ok value
+        /// @param other the Ok value to compare against
+        /// @return true if the Result is not Ok or the Ok value is not equal
+        template <class OkType2>
+        bool operator!=(impl::OkContainer<OkType2> const& other) const noexcept {
+            return !(*this == other);
+        }
+
+        /// @brief Returns true if the Result is not equal to an Err value
+        /// @param other the Err value to compare against
+        /// @return true if the Result is not Err or the Err value is not equal
+        template <class ErrType2>
+        bool operator!=(impl::ErrContainer<ErrType2> const& other) const noexcept {
+            return !(*this == other);
+        }
+
         /// @brief Returns true if the Result is Ok and the Ok value satisfies the predicate
         /// @param predicate the predicate to check the Ok value against
         /// @return true if the Result is Ok and the Ok value satisfies the predicate
@@ -1057,6 +1139,42 @@ namespace geode {
     };
 
     namespace impl {
+        /// @brief Returns true if the Result is equal to an Ok value
+        /// @param ok the Ok value to compare against
+        /// @param result the Result to compare against
+        /// @return true if the Result is Ok and the Ok value is equal
+        template <class OkType, class ErrType, class OkType2>
+        bool operator==(OkContainer<OkType2> const& ok, Result<OkType, ErrType> const& result) noexcept {
+            return result == ok;
+        }
+
+        /// @brief Returns true if the Result is equal to an Err value
+        /// @param err the Err value to compare against
+        /// @param result the Result to compare against
+        /// @return true if the Result is Err and the Err value is equal
+        template <class OkType, class ErrType, class ErrType2>
+        bool operator==(ErrContainer<ErrType2> const& err, Result<OkType, ErrType> const& result) noexcept {
+            return result == err;
+        }
+
+        /// @brief Returns true if the Result is not equal to an Ok value
+        /// @param ok the Ok value to compare against
+        /// @param result the Result to compare against
+        /// @return true if the Result is not Ok or the Ok value is not equal
+        template <class OkType, class ErrType, class OkType2>
+        bool operator!=(OkContainer<OkType2> const& ok, Result<OkType, ErrType> const& result) noexcept {
+            return result != ok;
+        }
+
+        /// @brief Returns true if the Result is not equal to an Err value
+        /// @param err the Err value to compare against
+        /// @param result the Result to compare against
+        /// @return true if the Result is not Err or the Err value is not equal
+        template <class OkType, class ErrType, class ErrType2>
+        bool operator!=(ErrContainer<ErrType2> const& err, Result<OkType, ErrType> const& result) noexcept {
+            return result != err;
+        }
+
         template <class OkType, class ErrType>
         Result<OkType&, ErrType&> ResultData<OkType, ErrType>::asRef() noexcept {
             if (this->isOk()) {
