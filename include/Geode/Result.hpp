@@ -1,39 +1,42 @@
 #pragma once
-#include <concepts>
-#include <optional>
-#include <stdexcept>
-#include <utility>
-#include <variant>
+#ifndef GEODE_RESULT_HPP
+    #define GEODE_RESULT_HPP
 
-#if !defined(GEODE_CONCAT)
-    #define GEODE_CONCAT2(x, y) x##y
-    #define GEODE_CONCAT(x, y) GEODE_CONCAT2(x, y)
-#endif
+    #include <concepts>
+    #include <optional>
+    #include <stdexcept>
+    #include <utility>
+    #include <variant>
 
-#if !defined(GEODE_UNWRAP)
-    // Use gcc's scope expression feature, which makes this macro
-    // really nice to use. Unfortunately not available on MSVC
-    #if defined(__GNUC__) || defined(__clang__)
-        #define GEODE_UNWRAP(...)                                               \
-            ({                                                                  \
-                auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                 \
-                if (GEODE_CONCAT(res, __LINE__).isErr())                        \
-                    return geode::Err(GEODE_CONCAT(res, __LINE__).unwrapErr()); \
-                GEODE_CONCAT(res, __LINE__).unwrap();                           \
-            })
-    #else
-        #define GEODE_UNWRAP(...) \
-            if (auto res = __VA_ARGS__; res.isErr()) return geode::Err(res.unwrapErr())
+    #if !defined(GEODE_CONCAT)
+        #define GEODE_CONCAT2(x, y) x##y
+        #define GEODE_CONCAT(x, y) GEODE_CONCAT2(x, y)
     #endif
-#endif
 
-#if !defined(GEODE_UNWRAP_INTO)
-    #define GEODE_UNWRAP_INTO(variable, ...)                            \
-        auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                 \
-        if (GEODE_CONCAT(res, __LINE__).isErr())                        \
-            return geode::Err(GEODE_CONCAT(res, __LINE__).unwrapErr()); \
-        variable = GEODE_CONCAT(res, __LINE__).unwrap()
-#endif
+    #if !defined(GEODE_UNWRAP)
+        // Use gcc's scope expression feature, which makes this macro
+        // really nice to use. Unfortunately not available on MSVC
+        #if defined(__GNUC__) || defined(__clang__)
+            #define GEODE_UNWRAP(...)                                               \
+                ({                                                                  \
+                    auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                 \
+                    if (GEODE_CONCAT(res, __LINE__).isErr())                        \
+                        return geode::Err(GEODE_CONCAT(res, __LINE__).unwrapErr()); \
+                    GEODE_CONCAT(res, __LINE__).unwrap();                           \
+                })
+        #else
+            #define GEODE_UNWRAP(...) \
+                if (auto res = __VA_ARGS__; res.isErr()) return geode::Err(res.unwrapErr())
+        #endif
+    #endif
+
+    #if !defined(GEODE_UNWRAP_INTO)
+        #define GEODE_UNWRAP_INTO(variable, ...)                            \
+            auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                 \
+            if (GEODE_CONCAT(res, __LINE__).isErr())                        \
+                return geode::Err(GEODE_CONCAT(res, __LINE__).unwrapErr()); \
+            variable = GEODE_CONCAT(res, __LINE__).unwrap()
+    #endif
 
 namespace geode {
     template <class OkType, class ErrType>
@@ -1314,3 +1317,5 @@ namespace geode {
         }
     }
 }
+
+#endif // GEODE_RESULT_HPP
