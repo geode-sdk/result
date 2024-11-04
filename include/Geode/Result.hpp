@@ -4,6 +4,7 @@
 
     #include <concepts>
     #include <optional>
+    #include <sstream>
     #include <stdexcept>
     #include <string>
     #include <utility>
@@ -212,6 +213,13 @@ namespace geode {
 
         template <class Type>
         using ResultErrType = typename IsResultImpl<Type>::ErrType;
+
+        struct OkTag {};
+
+        struct ErrTag {};
+
+        template <class Type>
+        concept IsStringStreamable = requires(std::stringstream ss, Type t) { ss << t; };
     }
 
     /// @brief Constructs a new Ok value
@@ -257,6 +265,40 @@ namespace geode {
     constexpr impl::ErrContainer<void> Err() {
         return impl::ErrContainer<void>();
     }
+
+    class UnwrapException : public std::runtime_error {
+    public:
+        template <class T>
+            requires(impl::IsStringStreamable<T>)
+        UnwrapException(impl::ErrTag, T&& err) :
+            std::runtime_error(
+                (std::stringstream{} << "Called unwrap on an Err Result: " << std::forward<T>(err)).str()
+            ) {}
+
+        template <class T>
+            requires(!impl::IsStringStreamable<T>)
+        UnwrapException(impl::ErrTag, T&& err) :
+            std::runtime_error("Called unwrap on an Err Result") {}
+
+        template <class T>
+            requires(impl::IsStringStreamable<T>)
+        UnwrapException(impl::OkTag, T&& ok) :
+            std::runtime_error(
+                (std::stringstream{} << "Called unwrapErr on an Ok Result: " << std::forward<T>(ok)).str()
+            ) {}
+
+        template <class T>
+            requires(!impl::IsStringStreamable<T>)
+        UnwrapException(impl::OkTag, T&& ok) :
+            std::runtime_error("Called unwrapErr on an Ok Result") {}
+
+        UnwrapException(UnwrapException const&) = default;
+        UnwrapException(UnwrapException&&) = default;
+        ~UnwrapException() = default;
+
+        template <class OkType, class ErrType>
+        friend class ResultData;
+    };
 
     namespace impl {
 
@@ -321,26 +363,26 @@ namespace geode {
             }
 
             /// @brief Unwraps the Ok value from the Result
-            /// @throw std::runtime_error if the Result is Err
+            /// @throw UnwrapException if the Result is Err
             /// @return the Ok value
             constexpr OkType unwrap() {
                 if (isOk()) {
                     return std::move(std::get<0>(m_data));
                 }
                 else {
-                    throw std::runtime_error("Called unwrap on an error Result");
+                    throw UnwrapException(ErrTag{}, std::get<1>(m_data));
                 }
             }
 
             /// @brief Unwraps the Err value from the Result
-            /// @throw std::runtime_error if the Result is Ok
+            /// @throw UnwrapException if the Result is Ok
             /// @return the Err value
             constexpr ErrType unwrapErr() {
                 if (isErr()) {
                     return std::move(std::get<1>(m_data));
                 }
                 else {
-                    throw std::runtime_error("Called unwrapErr on an ok Result");
+                    throw UnwrapException(OkTag{}, std::get<0>(m_data));
                 }
             }
 
@@ -466,22 +508,22 @@ namespace geode {
             }
 
             /// @brief Unwraps the Result
-            /// @throw std::runtime_error if the Result is Err
+            /// @throw UnwrapException if the Result is Err
             constexpr void unwrap() {
                 if (isErr()) {
-                    throw std::runtime_error("Called unwrap on an error Result");
+                    throw UnwrapException(ErrTag{}, std::get<1>(m_data));
                 }
             }
 
             /// @brief Unwraps the Err value from the Result
-            /// @throw std::runtime_error if the Result is Ok
+            /// @throw UnwrapException if the Result is Ok
             /// @return the Err value
             constexpr ErrType unwrapErr() {
                 if (isErr()) {
                     return std::move(std::get<1>(m_data));
                 }
                 else {
-                    throw std::runtime_error("Called unwrapErr on an ok Result");
+                    throw UnwrapException(OkTag{}, std::get<0>(m_data));
                 }
             }
 
@@ -558,14 +600,23 @@ namespace geode {
             }
 
             /// @brief Unwraps the Ok value from the Result
-            /// @throw std::runtime_error if the Result is Err
+            /// @throw UnwrapException if the Result is Err
             /// @return the Ok value
             constexpr OkType unwrap() {
                 if (isOk()) {
                     return std::move(std::get<0>(m_data));
                 }
                 else {
-                    throw std::runtime_error("Called unwrap on an error Result");
+                    throw UnwrapException(ErrTag{}, std::get<1>(m_data));
+                }
+            }
+
+            /// @brief Unwraps the Err value from the Result
+            /// @throw UnwrapException if the Result is Ok
+            /// @return the Err value
+            constexpr void unwrapErr() {
+                if (isOk()) {
+                    throw UnwrapException(OkTag{}, std::get<0>(m_data));
                 }
             }
 
@@ -665,10 +716,19 @@ namespace geode {
             }
 
             /// @brief Unwraps the Result
-            /// @throw std::runtime_error if the Result is Err
+            /// @throw UnwrapException if the Result is Err
             constexpr void unwrap() {
                 if (isErr()) {
-                    throw std::runtime_error("Called unwrap on an error Result");
+                    throw UnwrapException(ErrTag{}, std::get<1>(m_data));
+                }
+            }
+
+            /// @brief Unwraps the Err value from the Result
+            /// @throw UnwrapException if the Result is Ok
+            /// @return the Err value
+            constexpr void unwrapErr() {
+                if (isOk()) {
+                    throw UnwrapException(OkTag{}, std::get<0>(m_data));
                 }
             }
 
