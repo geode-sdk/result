@@ -5,6 +5,15 @@
 
 using namespace geode;
 
+constexpr Result<int, int> divideConstexpr(int a, int b) {
+    if (b == 0) {
+        return Err(-1); // Using -1 as an error code for division by zero
+    }
+    else {
+        return Ok(a / b);
+    }
+}
+
 Result<int const&, std::string> divideConstRef(int a, int b) {
     if (b == 0) {
         return Err("Division by zero");
@@ -56,7 +65,9 @@ Result<void, void> divideVoidOkVoidErr(int a, int b) {
 
 // Test the special GEODE_UNWRAP macro on void unwrap
 Result<int, int> unwrapVoidOk() {
-    auto lambda = []() -> Result<void, int> { return Ok(); };
+    auto lambda = []() -> Result<void, int> {
+        return Ok();
+    };
     GEODE_UNWRAP(lambda());
     return Ok(10);
 }
@@ -126,6 +137,18 @@ TEST_CASE("Misc") {
             auto res = divideConstRefErrRef(32, 0);
             REQUIRE(res.isErr());
             REQUIRE(res.unwrapErr() == "Division by zero");
+        }
+    }
+
+    SECTION("Constexpr") {
+        SECTION("Ok") {
+            static_assert(divideConstexpr(32, 2).isOk(), "Expected Ok result");
+            static_assert(divideConstexpr(32, 2).unwrap() == 16, "Expected result to be 16");
+        }
+
+        SECTION("Err") {
+            static_assert(divideConstexpr(32, 0).isErr(), "Expected Err result");
+            static_assert(divideConstexpr(32, 0).unwrapErr() == -1, "Expected error code to be -1");
         }
     }
 }
