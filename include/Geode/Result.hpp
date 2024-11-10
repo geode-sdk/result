@@ -836,6 +836,15 @@ namespace geode {
         ) noexcept(std::is_nothrow_move_constructible_v<impl::ResultData<OkType, ErrType>>) :
             impl::ResultDataWrapper<OkType, ErrType>(std::move(other)) {}
 
+        constexpr Result& operator=(Result&& other
+        ) noexcept(std::is_nothrow_move_assignable_v<impl::ResultData<OkType, ErrType>>) {
+            if (this != &other) {
+                this->m_data = std::move(other.m_data);
+            }
+
+            return *this;
+        }
+
         /// @brief Returns true if the Result is Ok
         /// @return true if the Result is Ok
         constexpr explicit operator bool() const noexcept {
