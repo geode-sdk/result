@@ -1071,7 +1071,9 @@ namespace geode {
         /// @brief Inspects the Ok value with an operation
         /// @param operation the operation to call the Ok value with
         /// @return the Result itself
-        constexpr Result<OkType, ErrType>& inspect(std::invocable<OkType const&> auto&& operation
+        template <class Fn>
+            requires(!std::same_as<OkType, void> && std::invocable<Fn, OkType const&>)
+        constexpr Result<OkType, ErrType>& inspect(Fn&& operation
         ) noexcept(noexcept(operation(std::declval<OkType const&>()))) {
             this->inspectInternal(operation);
             return *this;
@@ -1080,7 +1082,9 @@ namespace geode {
         /// @brief Inspects the Err value with an operation
         /// @param operation the operation to call the Err value with
         /// @return the Result itself
-        constexpr Result<OkType, ErrType>& inspectErr(std::invocable<ErrType const&> auto&& operation
+        template <class Fn>
+            requires(!std::same_as<ErrType, void> && std::invocable<Fn, ErrType const&>)
+        constexpr Result<OkType, ErrType>& inspectErr(Fn&& operation
         ) noexcept(noexcept(operation(std::declval<ErrType const&>()))) {
             this->inspectInternalErr(operation);
             return *this;

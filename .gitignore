@@ -9,3 +9,5 @@ build/
 ## VSCode.gitignore
 
 .vscode/
+
+.cache/
