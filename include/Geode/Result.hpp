@@ -1212,6 +1212,36 @@ namespace geode {
             return !(*this == other);
         }
 
+        /// @brief Unwraps the Ok value from the Result
+        /// @throw UnwrapException if the Result is Err
+        /// @return the Ok value
+        /// @note Same behavior as Result::unwrap()
+        constexpr decltype(auto) operator*() && noexcept
+            requires(!std::same_as<OkType, void>)
+        {
+            return std::move(*this).unwrap();
+        }
+
+        /// @brief Unwraps the Ok value from the Result
+        /// @throw UnwrapException if the Result is Err
+        /// @return the Ok value
+        /// @note Same behavior as Result::unwrap()
+        constexpr decltype(auto) operator*() & noexcept
+            requires(!std::same_as<OkType, void>)
+        {
+            return this->unwrap();
+        }
+
+        /// @brief Unwraps the Ok value from the Result
+        /// @throw UnwrapException if the Result is Err
+        /// @return the Ok value
+        /// @note Same behavior as Result::unwrap()
+        constexpr decltype(auto) operator*() const& noexcept
+            requires(!std::same_as<OkType, void>)
+        {
+            return this->unwrap();
+        }
+
         /// @brief Returns true if the Result is Ok and the Ok value satisfies the predicate
         /// @param predicate the predicate to check the Ok value against
         /// @return true if the Result is Ok and the Ok value satisfies the predicate

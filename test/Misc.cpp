@@ -177,4 +177,10 @@ TEST_CASE("Misc") {
             }
         }
     }
+
+    SECTION("Operator*") {
+        auto res = divideConstRefErrRef(32, 2);
+        REQUIRE(res.isOk());
+        REQUIRE(*res == 16);
+    }
 }
