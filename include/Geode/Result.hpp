@@ -40,6 +40,30 @@
             variable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap()
     #endif
 
+    #if !defined(GEODE_LET_OK)
+        #define GEODE_LET_OK(variable, ...)                                                        \
+            auto [variable, GEODE_CONCAT(res, __LINE__)] =                                         \
+                std::make_pair(geode::impl::ResultOkType<decltype(__VA_ARGS__)>{}, (__VA_ARGS__)); \
+            GEODE_CONCAT(res, __LINE__).isOk() &&                                                  \
+                (variable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap(), true)
+    #endif
+
+    #if !defined(GEODE_LET_ERR)
+        #define GEODE_LET_ERR(variable, ...)                                                        \
+            auto [variable, GEODE_CONCAT(res, __LINE__)] =                                          \
+                std::make_pair(geode::impl::ResultErrType<decltype(__VA_ARGS__)>{}, (__VA_ARGS__)); \
+            GEODE_CONCAT(res, __LINE__).isErr() &&                                                  \
+                (variable = std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr(), true)
+    #endif
+
+    #if !defined(GEODE_LET_SOME)
+        #define GEODE_LET_SOME(variable, ...)                                                      \
+            auto [variable, GEODE_CONCAT(res, __LINE__)] =                                         \
+                std::make_pair(geode::impl::OptionalType<decltype(__VA_ARGS__)>{}, (__VA_ARGS__)); \
+            GEODE_CONCAT(res, __LINE__).has_value() &&                                             \
+                (variable = std::move(GEODE_CONCAT(res, __LINE__)).value(), true)
+    #endif
+
 namespace geode {
     template <class OkType, class ErrType>
     class Result;
@@ -556,7 +580,8 @@ namespace geode {
                 }
             }
 
-            /// @brief Unwraps the Ok value from the Result, returning the result of an operation if unavailable
+            /// @brief Unwraps the Ok value from the Result, returning the result of an
+            /// operation if unavailable
             /// @param operation the operation to perform if the Result is Err
             /// @return the Ok value if available, otherwise the result of the operation
             constexpr OkType unwrapOrElse(std::invocable auto&& operation
@@ -571,7 +596,8 @@ namespace geode {
                 }
             }
 
-            /// @brief Unwraps the Ok value from the Result, returning the result of an operation if unavailable
+            /// @brief Unwraps the Ok value from the Result, returning the result of an
+            /// operation if unavailable
             /// @param operation the operation to perform if the Result is Err
             /// @return the Ok value if available, otherwise the result of the operation
             constexpr OkType unwrapOrElse(std::invocable auto&& operation
@@ -918,7 +944,8 @@ namespace geode {
                 }
             }
 
-            /// @brief Unwraps the Ok value from the Result, returning the result of an operation if unavailable
+            /// @brief Unwraps the Ok value from the Result, returning the result of an
+            /// operation if unavailable
             /// @param operation the operation to perform if the Result is Err
             /// @return the Ok value if available, otherwise the result of the operation
             constexpr OkType unwrapOrElse(std::invocable auto&& operation
@@ -933,7 +960,8 @@ namespace geode {
                 }
             }
 
-            /// @brief Unwraps the Ok value from the Result, returning the result of an operation if unavailable
+            /// @brief Unwraps the Ok value from the Result, returning the result of an
+            /// operation if unavailable
             /// @param operation the operation to perform if the Result is Err
             /// @return the Ok value if available, otherwise the result of the operation
             constexpr OkType unwrapOrElse(std::invocable auto&& operation
@@ -1775,7 +1803,8 @@ namespace geode {
             }
         }
 
-        /// @brief Flattens the Result from Result<Result<OkType, ErrType>, ErrType> to Result<OkType, ErrType>
+        /// @brief Flattens the Result from Result<Result<OkType, ErrType>, ErrType> to
+        /// Result<OkType, ErrType>
         /// @return the inner Result if the Result is Ok, otherwise the outer Result
         constexpr Result<impl::ResultOkType<OkType>, ErrType> flatten(
         ) && noexcept(std::is_nothrow_move_constructible_v<OkType> && std::is_nothrow_move_constructible_v<ErrType>)
@@ -1789,7 +1818,8 @@ namespace geode {
             }
         }
 
-        /// @brief Flattens the Result from Result<Result<OkType, ErrType>, ErrType> to Result<OkType, ErrType>
+        /// @brief Flattens the Result from Result<Result<OkType, ErrType>, ErrType> to
+        /// Result<OkType, ErrType>
         /// @return the inner Result if the Result is Ok, otherwise the outer Result
         constexpr Result<impl::ResultOkType<OkType>, ErrType> flatten(
         ) const& noexcept(std::is_nothrow_move_constructible_v<OkType> && std::is_nothrow_move_constructible_v<ErrType>)
