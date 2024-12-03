@@ -238,6 +238,22 @@ TEST_CASE("Misc") {
         REQUIRE(value == 16);
     }
 
+    SECTION("Unwrap Either") {
+        if (GEODE_UNWRAP_EITHER(value, err, divideConstexpr(32, 2))) {
+            REQUIRE(value == 16);
+        }
+        else {
+            FAIL("Expected the block to be executed");
+        }
+
+        if (GEODE_UNWRAP_EITHER(value, err, divideConstexpr(32, 0))) {
+            FAIL("Expected the block to not be executed");
+        }
+        else {
+            REQUIRE(err == -1);
+        }
+    }
+
     SECTION("Operator*") {
         auto res = divideConstRefErrRef(32, 2);
         REQUIRE(res.isOk());
