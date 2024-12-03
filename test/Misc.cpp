@@ -232,7 +232,7 @@ TEST_CASE("Misc") {
     }
 
     SECTION("Unwrap Into Else") {
-        GEODE_UNWRAP_INTO_ELSE(value, divideConstexpr(32, 2)) {
+        GEODE_UNWRAP_OR_ELSE(value, divideConstexpr(32, 2)) {
             FAIL("Expected the block to not be executed");
         }
         REQUIRE(value == 16);

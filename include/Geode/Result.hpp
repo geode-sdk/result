@@ -64,8 +64,8 @@
                 (variable = std::move(GEODE_CONCAT(res, __LINE__)).value(), true)
     #endif
 
-    #if !defined(GEODE_UNWRAP_INTO_ELSE)
-        #define GEODE_UNWRAP_INTO_ELSE(variable, ...)                       \
+    #if !defined(GEODE_UNWRAP_OR_ELSE)
+        #define GEODE_UNWRAP_OR_ELSE(variable, ...)                         \
             geode::impl::ResultOkType<decltype(__VA_ARGS__)> variable;      \
             auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                 \
             if (GEODE_CONCAT(res, __LINE__).isOk())                         \
