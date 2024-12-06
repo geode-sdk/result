@@ -77,10 +77,10 @@
             geode::impl::ResultOkType<std::remove_cvref_t<decltype(__VA_ARGS__)>> okVariable;       \
             auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                                         \
             if (geode::impl::ResultErrType<std::remove_cvref_t<decltype(__VA_ARGS__)>> errVariable; \
-                GEODE_CONCAT(res, __LINE__).isOk() ||                                               \
-                (errVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr(), false))          \
-                okVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap();                       \
-            else
+                GEODE_CONCAT(res, __LINE__).isErr() &&                                              \
+                    (errVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr(), true) ||     \
+                (okVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap(), false))
+
     #endif
 
     #if !defined(GEODE_UNWRAP_EITHER)
