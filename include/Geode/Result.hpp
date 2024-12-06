@@ -1,99 +1,132 @@
-#pragma once
 #ifndef GEODE_RESULT_HPP
-    #define GEODE_RESULT_HPP
+#define GEODE_RESULT_HPP
 
-    #include <concepts>
-    #include <optional>
-    #include <sstream>
-    #include <stdexcept>
-    #include <string>
-    #include <tuple>
-    #include <type_traits>
-    #include <utility>
-    #include <variant>
+#include <concepts>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <variant>
 
-    #if !defined(GEODE_CONCAT)
-        #define GEODE_CONCAT2(x, y) x##y
-        #define GEODE_CONCAT(x, y) GEODE_CONCAT2(x, y)
+#if !defined(GEODE_CONCAT)
+    #define GEODE_CONCAT2(x, y) x##y
+    #define GEODE_CONCAT(x, y) GEODE_CONCAT2(x, y)
+#endif
+
+#if !defined(GEODE_UNWRAP)
+    // Use gcc's scope expression feature, which makes this macro
+    // really nice to use. Unfortunately not available on MSVC
+    #if defined(__GNUC__) || defined(__clang__)
+        #define GEODE_UNWRAP(...)                                                          \
+            ({                                                                             \
+                auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                            \
+                if (GEODE_CONCAT(res, __LINE__).isErr())                                   \
+                    return geode::Err(std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr()); \
+                std::move(GEODE_CONCAT(res, __LINE__)).unwrap();                           \
+            })
+    #else
+        #define GEODE_UNWRAP(...) \
+            if (auto res = __VA_ARGS__; res.isErr()) return geode::Err(std::move(res).unwrapErr())
     #endif
+#endif
 
-    #if !defined(GEODE_UNWRAP)
-        // Use gcc's scope expression feature, which makes this macro
-        // really nice to use. Unfortunately not available on MSVC
-        #if defined(__GNUC__) || defined(__clang__)
-            #define GEODE_UNWRAP(...)                                                          \
-                ({                                                                             \
-                    auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                            \
-                    if (GEODE_CONCAT(res, __LINE__).isErr())                                   \
-                        return geode::Err(std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr()); \
-                    std::move(GEODE_CONCAT(res, __LINE__)).unwrap();                           \
-                })
-        #else
-            #define GEODE_UNWRAP(...) \
-                if (auto res = __VA_ARGS__; res.isErr()) return geode::Err(res.unwrapErr())
-        #endif
-    #endif
+#if !defined(GEODE_UNWRAP_INTO)
+    #define GEODE_UNWRAP_INTO(variable, ...)                                       \
+        auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                            \
+        if (GEODE_CONCAT(res, __LINE__).isErr())                                   \
+            return geode::Err(std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr()); \
+        variable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap()
+#endif
 
-    #if !defined(GEODE_UNWRAP_INTO)
-        #define GEODE_UNWRAP_INTO(variable, ...)                                       \
-            auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                            \
-            if (GEODE_CONCAT(res, __LINE__).isErr())                                   \
-                return geode::Err(std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr()); \
-            variable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap()
-    #endif
+#if !defined(GEODE_UNWRAP_IF_OK)
+    #define GEODE_UNWRAP_IF_OK(variable, ...)                                                      \
+        auto [variable, GEODE_CONCAT(res, __LINE__)] = std::make_pair(                             \
+            geode::impl::ResultOkType<std::remove_cvref_t<decltype(__VA_ARGS__)>>{}, (__VA_ARGS__) \
+        );                                                                                         \
+        GEODE_CONCAT(res, __LINE__).isOk() &&                                                      \
+            (variable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap(), true)
+#endif
 
-    #if !defined(GEODE_UNWRAP_IF_OK)
-        #define GEODE_UNWRAP_IF_OK(variable, ...)                                        \
-            auto [variable, GEODE_CONCAT(res, __LINE__)] = std::make_pair(               \
-                geode::impl::ResultOkType<std::remove_cvref_t<decltype(__VA_ARGS__)>>{}, \
-                (__VA_ARGS__)                                                            \
-            );                                                                           \
-            GEODE_CONCAT(res, __LINE__).isOk() &&                                        \
-                (variable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap(), true)
-    #endif
+#if !defined(GEODE_UNWRAP_INTO_IF_OK)
+    #define GEODE_UNWRAP_INTO_IF_OK(variable, ...)        \
+        auto GEODE_CONCAT(res, __LINE__) = (__VA_ARGS__); \
+        GEODE_CONCAT(res, __LINE__).isOk() &&             \
+            (variable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap(), true)
+#endif
 
-    #if !defined(GEODE_UNWRAP_IF_ERR)
-        #define GEODE_UNWRAP_IF_ERR(variable, ...)                                        \
-            auto [variable, GEODE_CONCAT(res, __LINE__)] = std::make_pair(                \
-                geode::impl::ResultErrType<std::remove_cvref_t<decltype(__VA_ARGS__)>>{}, \
-                (__VA_ARGS__)                                                             \
-            );                                                                            \
-            GEODE_CONCAT(res, __LINE__).isErr() &&                                        \
-                (variable = std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr(), true)
-    #endif
+#if !defined(GEODE_UNWRAP_IF_ERR)
+    #define GEODE_UNWRAP_IF_ERR(variable, ...)                                                      \
+        auto [variable, GEODE_CONCAT(res, __LINE__)] = std::make_pair(                              \
+            geode::impl::ResultErrType<std::remove_cvref_t<decltype(__VA_ARGS__)>>{}, (__VA_ARGS__) \
+        );                                                                                          \
+        GEODE_CONCAT(res, __LINE__).isErr() &&                                                      \
+            (variable = std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr(), true)
+#endif
 
-    #if !defined(GEODE_UNWRAP_IF_SOME)
-        #define GEODE_UNWRAP_IF_SOME(variable, ...)                                      \
-            auto [variable, GEODE_CONCAT(res, __LINE__)] = std::make_pair(               \
-                geode::impl::OptionalType<std::remove_cvref_t<decltype(__VA_ARGS__)>>{}, \
-                (__VA_ARGS__)                                                            \
-            );                                                                           \
-            GEODE_CONCAT(res, __LINE__).has_value() &&                                   \
-                (variable = std::move(GEODE_CONCAT(res, __LINE__)).value(), true)
-    #endif
+#if !defined(GEODE_UNWRAP_INTO_IF_ERR)
+    #define GEODE_UNWRAP_INTO_IF_ERR(variable, ...)       \
+        auto GEODE_CONCAT(res, __LINE__) = (__VA_ARGS__); \
+        GEODE_CONCAT(res, __LINE__).isErr() &&            \
+            (variable = std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr(), true)
+#endif
 
-    #if !defined(GEODE_UNWRAP_OR_ELSE)
-        #define GEODE_UNWRAP_OR_ELSE(okVariable, errVariable, ...)                                  \
-            geode::impl::ResultOkType<std::remove_cvref_t<decltype(__VA_ARGS__)>> okVariable;       \
-            auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                                         \
-            if (geode::impl::ResultErrType<std::remove_cvref_t<decltype(__VA_ARGS__)>> errVariable; \
-                GEODE_CONCAT(res, __LINE__).isErr() &&                                              \
-                    (errVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr(), true) ||     \
-                (okVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap(), false))
+#if !defined(GEODE_UNWRAP_IF_SOME)
+    #define GEODE_UNWRAP_IF_SOME(variable, ...)                                                    \
+        auto [variable, GEODE_CONCAT(res, __LINE__)] = std::make_pair(                             \
+            geode::impl::OptionalType<std::remove_cvref_t<decltype(__VA_ARGS__)>>{}, (__VA_ARGS__) \
+        );                                                                                         \
+        GEODE_CONCAT(res, __LINE__).has_value() &&                                                 \
+            (variable = std::move(GEODE_CONCAT(res, __LINE__)).value(), true)
+#endif
 
-    #endif
+#if !defined(GEODE_UNWRAP_INTO_IF_SOME)
+    #define GEODE_UNWRAP_INTO_IF_SOME(variable, ...)      \
+        auto GEODE_CONCAT(res, __LINE__) = (__VA_ARGS__); \
+        GEODE_CONCAT(res, __LINE__).has_value() &&        \
+            (variable = std::move(GEODE_CONCAT(res, __LINE__)).value(), true)
+#endif
 
-    #if !defined(GEODE_UNWRAP_EITHER)
-        #define GEODE_UNWRAP_EITHER(okVariable, errVariable, ...)                           \
-            auto [okVariable, errVariable, GEODE_CONCAT(res, __LINE__)] = std::make_tuple(  \
-                geode::impl::ResultOkType<std::remove_cvref_t<decltype(__VA_ARGS__)>>{},    \
-                geode::impl::ResultErrType<std::remove_cvref_t<decltype(__VA_ARGS__)>>{},   \
-                (__VA_ARGS__)                                                               \
-            );                                                                              \
-            GEODE_CONCAT(res, __LINE__).isOk() &&                                           \
-                    (okVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap(), true) || \
-                (errVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr(), false)
-    #endif
+#if !defined(GEODE_UNWRAP_OR_ELSE)
+    #define GEODE_UNWRAP_OR_ELSE(okVariable, errVariable, ...)                                  \
+        geode::impl::ResultOkType<std::remove_cvref_t<decltype(__VA_ARGS__)>> okVariable;       \
+        auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                                         \
+        if (geode::impl::ResultErrType<std::remove_cvref_t<decltype(__VA_ARGS__)>> errVariable; \
+            GEODE_CONCAT(res, __LINE__).isErr() &&                                              \
+                (errVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr(), true) ||     \
+            (okVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap(), false))
+#endif
+
+#if !defined(GEODE_UNWRAP_INTO_OR_ELSE)
+    #define GEODE_UNWRAP_INTO_OR_ELSE(okVariable, errVariable, ...)                             \
+        auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                                         \
+        if (geode::impl::ResultErrType<std::remove_cvref_t<decltype(__VA_ARGS__)>> errVariable; \
+            GEODE_CONCAT(res, __LINE__).isErr() &&                                              \
+                (errVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr(), true) ||     \
+            (okVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap(), false))
+#endif
+
+#if !defined(GEODE_UNWRAP_EITHER)
+    #define GEODE_UNWRAP_EITHER(okVariable, errVariable, ...)                           \
+        auto [okVariable, errVariable, GEODE_CONCAT(res, __LINE__)] = std::make_tuple(  \
+            geode::impl::ResultOkType<std::remove_cvref_t<decltype(__VA_ARGS__)>>{},    \
+            geode::impl::ResultErrType<std::remove_cvref_t<decltype(__VA_ARGS__)>>{},   \
+            (__VA_ARGS__)                                                               \
+        );                                                                              \
+        GEODE_CONCAT(res, __LINE__).isOk() &&                                           \
+                (okVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap(), true) || \
+            (errVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr(), false)
+#endif
+
+#if !defined(GEODE_UNWRAP_INTO_EITHER)
+    #define GEODE_UNWRAP_INTO_EITHER(okVariable, errVariable, ...)                      \
+        auto GEODE_CONCAT(res, __LINE__) = (__VA_ARGS__);                               \
+        GEODE_CONCAT(res, __LINE__).isOk() &&                                           \
+                (okVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap(), true) || \
+            (errVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr(), false)
+#endif
 
 namespace geode {
     template <class OkType, class ErrType>

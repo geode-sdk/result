@@ -57,14 +57,49 @@ Here are the convenience utils for entering into an if block with the underlying
 int main() {
     // Only enters the block if the result is ok,
     // setting the value into the variable
+    // Requires ok value to be default constructible
     if (GEODE_UNWRAP_IF_OK(p3, integerDivision(3, 2))) {
         assert(p3 == 1);
     }
 
+    int p4 = 0;
+    if (GEODE_UNWRAP_INTO_IF_OK(p4, integerDivision(3, 2))) {
+        assert(p4 == 1);
+    }
+
     // Only enters the block if the result is an error,
     // setting the value into the variable
+    // Requires err value to be default constructible
     if (GEODE_UNWRAP_IF_ERR(e1, integerDivision(3, 0))) {
         assert(e1 == "Division by zero");
+    }
+
+    std::string e2;
+    if (GEODE_UNWRAP_INTO_IF_ERR(e2, integerDivision(3, 0))) {
+        assert(e2 == "Division by zero");
+    }
+
+    // Enters the first block if the result is ok,
+    // otherwise enters the second block
+    // Requires both ok and err values to be default constructible
+    if (GEODE_UNWRAP_EITHER(p5, err, integerDivision(3, 2))) {
+        assert(p5 == 1);
+    } else {
+        assert(false);
+    }
+
+    if (GEODE_UNWRAP_EITHER(p6, err, integerDivision(3, 0))) {
+        assert(false);
+    } else {
+        assert(err == "Division by zero");
+    }
+
+    int p7 = 0;
+    std::string e3;
+    if (GEODE_UNWRAP_INTO_EITHER(p7, e3, integerDivision(3, 2))) {
+        assert(p7 == 1);
+    } else {
+        assert(false);
     }
 }
 ```
@@ -75,15 +110,22 @@ Here are the convenience utils for setting a value inline with manually handling
 int main() {
     // Enters the trailing block if the result is an error,
     // otherwise sets the value into the variable
-    GEODE_UNWRAP_OR_ELSE(p4, err, integerDivision(3, 2)) {
+    // Requires both ok and err values to be default constructible
+    GEODE_UNWRAP_OR_ELSE(p8, err, integerDivision(3, 2)) {
         return -1;
     }
-    assert(p4 == 1);
+    assert(p8 == 1);
 
-    GEODE_UNWRAP_OR_ELSE(p5, err, integerDivision(3, 0)) {
-        p5 = -1;
+    GEODE_UNWRAP_OR_ELSE(p9, err, integerDivision(3, 0)) {
+        p9 = -1;
     }
-    assert(p5 == -1);
+    assert(p9 == -1);
+
+    int p10 = 0;
+    GEODE_UNWRAP_INTO_OR_ELSE(p10, err, integerDivision(3, 2)) {
+        return -1;
+    }
+    assert(p10 == 1);
 }
 ```
 
@@ -93,26 +135,26 @@ And here are the functions built into the Result to extract the value:
 int main() {
     // Returns the value if the result is ok,
     // otherwise returns the default value for type
-    int p6 = integerDivision(3, 0).unwrapOrDefault();
-    assert(p6 == 0);
+    int p11 = integerDivision(3, 0).unwrapOrDefault();
+    assert(p11 == 0);
 
     // Returns the value if the result is ok,
     // otherwise returns the passed value
-    int p7 = integerDivision(3, 0).unwrapOr(-1);
-    assert(p7 == -1);
+    int p12 = integerDivision(3, 0).unwrapOr(-1);
+    assert(p12 == -1);
 
     // Returns the value if the result is ok,
     // otherwise returns the result of the operation
-    int p8 = integerDivision(3, 0).unwrapOrElse([](){
+    int p13 = integerDivision(3, 0).unwrapOrElse([](){
         return -1;
     });
-    assert(p7 == -1);
+    assert(p13 == -1);
 
     // NOT RECOMMENDED!!!
     // Returns the value if the result is ok,
     // otherwise **throws an exception**
-    int p9 = integerDivision(3, 2).unwrap();
-    std::string e2 = integerDivision(3, 0).unwrapErr();
+    int p14 = integerDivision(3, 2).unwrap();
+    std::string e4 = integerDivision(3, 0).unwrapErr();
 }
 ```
 
