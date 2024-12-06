@@ -75,12 +75,12 @@ Here are the convenience utils for setting a value inline with manually handling
 int main() {
     // Enters the trailing block if the result is an error,
     // otherwise sets the value into the variable
-    GEODE_UNWRAP_OR_ELSE(p4, integerDivision(3, 2)) {
+    GEODE_UNWRAP_OR_ELSE(p4, err, integerDivision(3, 2)) {
         return -1;
     }
     assert(p4 == 1);
 
-    GEODE_UNWRAP_OR_ELSE(p5, integerDivision(3, 0)) {
+    GEODE_UNWRAP_OR_ELSE(p5, err, integerDivision(3, 0)) {
         p5 = -1;
     }
     assert(p5 == -1);

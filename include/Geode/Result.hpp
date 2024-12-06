@@ -73,11 +73,13 @@
     #endif
 
     #if !defined(GEODE_UNWRAP_OR_ELSE)
-        #define GEODE_UNWRAP_OR_ELSE(variable, ...)                                         \
-            geode::impl::ResultOkType<std::remove_cvref_t<decltype(__VA_ARGS__)>> variable; \
-            auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                                 \
-            if (GEODE_CONCAT(res, __LINE__).isOk())                                         \
-                variable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap();                 \
+        #define GEODE_UNWRAP_OR_ELSE(okVariable, errVariable, ...)                                  \
+            geode::impl::ResultOkType<std::remove_cvref_t<decltype(__VA_ARGS__)>> okVariable;       \
+            auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                                         \
+            if (geode::impl::ResultErrType<std::remove_cvref_t<decltype(__VA_ARGS__)>> errVariable; \
+                GEODE_CONCAT(res, __LINE__).isOk() ||                                               \
+                (errVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr(), false))          \
+                okVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap();                       \
             else
     #endif
 
