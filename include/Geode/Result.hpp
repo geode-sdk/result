@@ -1635,7 +1635,7 @@ namespace geode {
         /// @param operation the operation to call the Ok value with
         /// @return the Result itself
         template <class Fn>
-            requires(!std::same_as<OkType, void> && std::invocable<Fn, OkType const&>)
+            requires(!std::same_as<OkType, void> && std::invocable<Fn, std::add_lvalue_reference_t<std::add_const_t<OkType>>>)
         constexpr Result<OkType, ErrType>& inspect(Fn&& operation
         ) noexcept(noexcept(operation(std::declval<OkType const&>()))) {
             this->inspectInternal(operation);
@@ -1646,7 +1646,7 @@ namespace geode {
         /// @param operation the operation to call the Err value with
         /// @return the Result itself
         template <class Fn>
-            requires(!std::same_as<ErrType, void> && std::invocable<Fn, ErrType const&>)
+            requires(!std::same_as<ErrType, void> && std::invocable<Fn, std::add_lvalue_reference_t<std::add_const_t<ErrType>>>)
         constexpr Result<OkType, ErrType>& inspectErr(Fn&& operation
         ) noexcept(noexcept(operation(std::declval<ErrType const&>()))) {
             this->inspectInternalErr(operation);
