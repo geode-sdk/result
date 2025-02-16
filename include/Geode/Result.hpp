@@ -2,6 +2,7 @@
 #define GEODE_RESULT_HPP
 
 #include <concepts>
+#include <exception>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -126,6 +127,17 @@
         GEODE_CONCAT(res, __LINE__).isOk() &&                                           \
                 (okVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap(), true) || \
             (errVariable = std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr(), false)
+#endif
+
+// Internal macros
+
+#if !defined(GEODE_RESULT_IMPL_THROW)
+    #if __cpp_exceptions
+        #define GEODE_RESULT_IMPL_THROW(expr) throw expr
+    #else
+        // used when `-fno-exceptions` is active
+        #define GEODE_RESULT_IMPL_THROW(expr) std::terminate()
+    #endif
 #endif
 
 namespace geode {
@@ -514,7 +526,7 @@ namespace geode {
                     return std::get<0>(std::move(m_data));
                 }
                 else {
-                    throw UnwrapException(ErrTag{}, std::get<1>(m_data));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, std::get<1>(m_data)));
                 }
             }
 
@@ -526,7 +538,7 @@ namespace geode {
                     return std::get<0>(m_data);
                 }
                 else {
-                    throw UnwrapException(ErrTag{}, std::get<1>(m_data));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, std::get<1>(m_data)));
                 }
             }
 
@@ -538,7 +550,7 @@ namespace geode {
                     return std::get<0>(m_data);
                 }
                 else {
-                    throw UnwrapException(ErrTag{}, std::get<1>(m_data));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, std::get<1>(m_data)));
                 }
             }
 
@@ -550,7 +562,7 @@ namespace geode {
                     return std::get<1>(std::move(m_data));
                 }
                 else {
-                    throw UnwrapException(OkTag{}, std::get<0>(m_data));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, std::get<0>(m_data)));
                 }
             }
 
@@ -562,7 +574,7 @@ namespace geode {
                     return std::get<1>(m_data);
                 }
                 else {
-                    throw UnwrapException(OkTag{}, std::get<0>(m_data));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, std::get<0>(m_data)));
                 }
             }
 
@@ -574,7 +586,7 @@ namespace geode {
                     return std::get<1>(m_data);
                 }
                 else {
-                    throw UnwrapException(OkTag{}, std::get<0>(m_data));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, std::get<0>(m_data)));
                 }
             }
 
@@ -769,7 +781,7 @@ namespace geode {
             /// @throw UnwrapException if the Result is Err
             constexpr void unwrap() {
                 if (isErr()) {
-                    throw UnwrapException(ErrTag{}, std::get<1>(m_data));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, std::get<1>(m_data)));
                 }
             }
 
@@ -781,7 +793,7 @@ namespace geode {
                     return std::get<1>(std::move(m_data));
                 }
                 else {
-                    throw UnwrapException(OkTag{}, std::get<0>(m_data));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, std::get<0>(m_data)));
                 }
             }
 
@@ -793,7 +805,7 @@ namespace geode {
                     return std::get<1>(m_data);
                 }
                 else {
-                    throw UnwrapException(OkTag{}, std::get<0>(m_data));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, std::get<0>(m_data)));
                 }
             }
 
@@ -805,7 +817,7 @@ namespace geode {
                     return std::get<1>(m_data);
                 }
                 else {
-                    throw UnwrapException(OkTag{}, std::get<0>(m_data));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, std::get<0>(m_data)));
                 }
             }
 
@@ -905,7 +917,7 @@ namespace geode {
                     return std::get<0>(std::move(m_data));
                 }
                 else {
-                    throw UnwrapException(ErrTag{}, std::get<1>(m_data));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, std::get<1>(m_data)));
                 }
             }
 
@@ -917,7 +929,7 @@ namespace geode {
                     return std::get<0>(m_data);
                 }
                 else {
-                    throw UnwrapException(ErrTag{}, std::get<1>(m_data));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, std::get<1>(m_data)));
                 }
             }
 
@@ -929,7 +941,7 @@ namespace geode {
                     return std::get<0>(m_data);
                 }
                 else {
-                    throw UnwrapException(ErrTag{}, std::get<1>(m_data));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, std::get<1>(m_data)));
                 }
             }
 
@@ -938,7 +950,7 @@ namespace geode {
             /// @return the Err value
             constexpr void unwrapErr() {
                 if (isOk()) {
-                    throw UnwrapException(OkTag{}, std::get<0>(m_data));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, std::get<0>(m_data)));
                 }
             }
 
@@ -1093,7 +1105,7 @@ namespace geode {
             /// @throw UnwrapException if the Result is Err
             constexpr void unwrap() {
                 if (isErr()) {
-                    throw UnwrapException(ErrTag{}, std::get<1>(m_data));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, std::get<1>(m_data)));
                 }
             }
 
@@ -1102,7 +1114,7 @@ namespace geode {
             /// @return the Err value
             constexpr void unwrapErr() {
                 if (isOk()) {
-                    throw UnwrapException(OkTag{}, std::get<0>(m_data));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, std::get<0>(m_data)));
                 }
             }
 
