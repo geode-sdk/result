@@ -25,7 +25,7 @@
             ({                                                                             \
                 auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                            \
                 if (GEODE_CONCAT(res, __LINE__).isErr())                                   \
-                    return geode::Err(std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr()); \
+                    return std::move(GEODE_CONCAT(res, __LINE__)).asErr();                 \
                 std::move(GEODE_CONCAT(res, __LINE__)).unwrap();                           \
             })
     #else
@@ -38,7 +38,7 @@
     #define GEODE_UNWRAP_INTO(variable, ...)                                       \
         auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                            \
         if (GEODE_CONCAT(res, __LINE__).isErr())                                   \
-            return geode::Err(std::move(GEODE_CONCAT(res, __LINE__)).unwrapErr()); \
+            return std::move(GEODE_CONCAT(res, __LINE__)).asErr();                 \
         variable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap()
 #endif
 
@@ -456,7 +456,7 @@ namespace geode {
             constexpr ResultData(ResultData const& other
             ) noexcept(std::is_nothrow_copy_constructible_v<ProtectedOkType> && std::is_nothrow_copy_constructible_v<ProtectedErrType>) :
                 m_data(other.m_data) {}
-
+        public:
             constexpr OkContainer<OkType> asOk() && noexcept
                 requires(!std::is_reference_v<OkType>)
             {
@@ -505,7 +505,6 @@ namespace geode {
                 return Err(std::get<1>(m_data).get());
             }
 
-        public:
             /// @brief Returns true if the Result is Ok
             /// @return true if the Result is Ok
             constexpr bool isOk() const noexcept {
@@ -736,6 +735,7 @@ namespace geode {
             ) noexcept(std::is_nothrow_copy_constructible_v<ProtectedErrType>) :
                 m_data(other.m_data) {}
 
+        public:
             constexpr OkContainer<void> asOk() const noexcept {
                 return Ok();
             }
@@ -764,7 +764,6 @@ namespace geode {
                 return Err(std::get<1>(m_data).get());
             }
 
-        public:
             /// @brief Returns true if the Result is Ok
             /// @return true if the Result is Ok
             constexpr bool isOk() const noexcept {
@@ -868,6 +867,7 @@ namespace geode {
             ) noexcept(std::is_nothrow_copy_constructible_v<ProtectedOkType>) :
                 m_data(other.m_data) {}
 
+        public:
             constexpr OkContainer<OkType> asOk() && noexcept
                 requires(!std::is_reference_v<OkType>)
             {
@@ -896,7 +896,6 @@ namespace geode {
                 return Err();
             }
 
-        public:
             /// @brief Returns true if the Result is Ok
             /// @return true if the Result is Ok
             constexpr bool isOk() const noexcept {
@@ -1080,6 +1079,7 @@ namespace geode {
 
             constexpr inline ResultData(ResultData const&) noexcept {}
 
+        public:
             constexpr inline OkContainer<void> asOk() const noexcept {
                 return Ok();
             }
@@ -1088,7 +1088,6 @@ namespace geode {
                 return Err();
             }
 
-        public:
             /// @brief Returns true if the Result is Ok
             /// @return true if the Result is Ok
             constexpr inline bool isOk() const noexcept {
