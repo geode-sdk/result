@@ -30,7 +30,7 @@
             })
     #else
         #define GEODE_UNWRAP(...) \
-            if (auto res = __VA_ARGS__; res.isErr()) return geode::Err(std::move(res).unwrapErr())
+            if (auto res = __VA_ARGS__; res.isErr()) return std::move(res).asErr()
     #endif
 #endif
 
