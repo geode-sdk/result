@@ -11,6 +11,7 @@
 #include <type_traits>
 #include <utility>
 #include <variant>
+#include <functional>
 
 #if !defined(GEODE_CONCAT)
     #define GEODE_CONCAT2(x, y) x##y
