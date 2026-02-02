@@ -477,49 +477,49 @@ namespace geode {
             constexpr OkContainer<OkType> asOk() && noexcept
                 requires(!std::is_reference_v<OkType>)
             {
-                return Ok(std::get<0>(std::move(m_data)));
+                return Ok(std::move(*std::get_if<0>(&m_data)));
             }
 
             constexpr OkContainer<OkType> asOk() const& noexcept
                 requires(!std::is_reference_v<OkType>)
             {
-                return Ok(static_cast<OkType>(std::get<0>(m_data)));
+                return Ok(static_cast<OkType>(*std::get_if<0>(&m_data)));
             }
 
             constexpr OkContainer<OkType&> asOk() && noexcept
                 requires(std::is_reference_v<OkType>)
             {
-                return Ok(std::get<0>(m_data).get());
+                return Ok(std::get_if<0>(&m_data)->get());
             }
 
             constexpr OkContainer<OkType&> asOk() const& noexcept
                 requires(std::is_reference_v<OkType>)
             {
-                return Ok(std::get<0>(m_data).get());
+                return Ok(std::get_if<0>(&m_data)->get());
             }
 
             constexpr ErrContainer<ErrType> asErr() && noexcept
                 requires(!std::is_reference_v<ErrType>)
             {
-                return Err(std::get<1>(std::move(m_data)));
+                return Err(std::move(*std::get_if<1>(&m_data)));
             }
 
             constexpr ErrContainer<ErrType> asErr() const& noexcept
                 requires(!std::is_reference_v<ErrType>)
             {
-                return Err(static_cast<ErrType>(std::get<1>(m_data)));
+                return Err(static_cast<ErrType>(*std::get_if<1>(&m_data)));
             }
 
             constexpr ErrContainer<ErrType&> asErr() && noexcept
                 requires(std::is_reference_v<ErrType>)
             {
-                return Err(std::get<1>(m_data).get());
+                return Err(std::get_if<1>(&m_data)->get());
             }
 
             constexpr ErrContainer<ErrType&> asErr() const& noexcept
                 requires(std::is_reference_v<ErrType>)
             {
-                return Err(std::get<1>(m_data).get());
+                return Err(std::get_if<1>(&m_data)->get());
             }
 
             /// @brief Returns true if the Result is Ok
@@ -538,11 +538,11 @@ namespace geode {
             /// @throw UnwrapException if the Result is Err
             /// @return the Ok value
             constexpr OkType&& unwrap() && {
-                if (isOk()) {
-                    return std::get<0>(std::move(m_data));
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    return std::move(*ptr);
                 }
                 else {
-                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, std::get<1>(m_data)));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, *std::get_if<1>(&m_data)));
                 }
             }
 
@@ -550,11 +550,11 @@ namespace geode {
             /// @throw UnwrapException if the Result is Err
             /// @return the Ok value
             constexpr OkType& unwrap() & {
-                if (isOk()) {
-                    return std::get<0>(m_data);
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    return *ptr;
                 }
                 else {
-                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, std::get<1>(m_data)));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, *std::get_if<1>(&m_data)));
                 }
             }
 
@@ -562,11 +562,11 @@ namespace geode {
             /// @throw UnwrapException if the Result is Err
             /// @return the Ok value
             constexpr OkType const& unwrap() const& {
-                if (isOk()) {
-                    return std::get<0>(m_data);
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    return *ptr;
                 }
                 else {
-                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, std::get<1>(m_data)));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, *std::get_if<1>(&m_data)));
                 }
             }
 
@@ -574,11 +574,11 @@ namespace geode {
             /// @throw UnwrapException if the Result is Ok
             /// @return the Err value
             constexpr ErrType&& unwrapErr() && {
-                if (isErr()) {
-                    return std::get<1>(std::move(m_data));
+                if (auto* ptr = std::get_if<1>(&m_data)) {
+                    return std::move(*ptr);
                 }
                 else {
-                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, std::get<0>(m_data)));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, *std::get_if<0>(&m_data)));
                 }
             }
 
@@ -586,11 +586,11 @@ namespace geode {
             /// @throw UnwrapException if the Result is Ok
             /// @return the Err value
             constexpr ErrType& unwrapErr() & {
-                if (isErr()) {
-                    return std::get<1>(m_data);
+                if (auto* ptr = std::get_if<1>(&m_data)) {
+                    return *ptr;
                 }
                 else {
-                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, std::get<0>(m_data)));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, *std::get_if<0>(&m_data)));
                 }
             }
 
@@ -598,11 +598,11 @@ namespace geode {
             /// @throw UnwrapException if the Result is Ok
             /// @return the Err value
             constexpr ErrType const& unwrapErr() const& {
-                if (isErr()) {
-                    return std::get<1>(m_data);
+                if (auto* ptr = std::get_if<1>(&m_data)) {
+                    return *ptr;
                 }
                 else {
-                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, std::get<0>(m_data)));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, *std::get_if<0>(&m_data)));
                 }
             }
 
@@ -620,8 +620,8 @@ namespace geode {
             ) && noexcept(std::is_nothrow_default_constructible_v<OkType> && std::is_nothrow_move_constructible_v<OkType>)
                 requires std::default_initializable<OkType>
             {
-                if (isOk()) {
-                    return std::get<0>(std::move(m_data));
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    return std::move(*ptr);
                 }
                 else {
                     return OkType();
@@ -634,8 +634,8 @@ namespace geode {
             ) const& noexcept(std::is_nothrow_default_constructible_v<OkType> && std::is_nothrow_move_constructible_v<OkType>)
                 requires std::default_initializable<OkType>
             {
-                if (isOk()) {
-                    return std::get<0>(m_data);
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    return *ptr;
                 }
                 else {
                     return OkType();
@@ -649,8 +649,8 @@ namespace geode {
             ) && noexcept(std::is_nothrow_move_constructible_v<OkType>)
                 requires std::constructible_from<OkType, decltype(defaultValue)>
             {
-                if (isOk()) {
-                    return std::get<0>(std::move(m_data));
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    return std::move(*ptr);
                 }
                 else {
                     return defaultValue;
@@ -664,8 +664,8 @@ namespace geode {
             ) const& noexcept(std::is_nothrow_move_constructible_v<OkType>)
                 requires std::constructible_from<OkType, decltype(defaultValue)>
             {
-                if (isOk()) {
-                    return std::get<0>(m_data);
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    return *ptr;
                 }
                 else {
                     return defaultValue;
@@ -680,8 +680,8 @@ namespace geode {
             ) && noexcept(std::is_nothrow_invocable_v<decltype(operation)>)
                 requires std::constructible_from<OkType, std::invoke_result_t<decltype(operation)>>
             {
-                if (isOk()) {
-                    return std::get<0>(std::move(m_data));
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    return std::move(*ptr);
                 }
                 else {
                     return operation();
@@ -696,8 +696,8 @@ namespace geode {
             ) const& noexcept(std::is_nothrow_invocable_v<decltype(operation)>)
                 requires std::constructible_from<OkType, std::invoke_result_t<decltype(operation)>>
             {
-                if (isOk()) {
-                    return std::get<0>(m_data);
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    return *ptr;
                 }
                 else {
                     return operation();
@@ -713,15 +713,15 @@ namespace geode {
         protected:
             constexpr void inspectInternal(std::invocable<OkType const&> auto&& operation) const
                 noexcept(noexcept(operation(std::declval<OkType const&>()))) {
-                if (this->isOk()) {
-                    operation(std::get<0>(m_data));
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    operation(*ptr);
                 }
             }
 
             constexpr void inspectInternalErr(std::invocable<ErrType const&> auto&& operation) const
                 noexcept(noexcept(operation(std::declval<ErrType const&>()))) {
-                if (this->isErr()) {
-                    operation(std::get<1>(m_data));
+                if (auto* ptr = std::get_if<1>(&m_data)) {
+                    operation(*ptr);
                 }
             }
         };
@@ -760,25 +760,25 @@ namespace geode {
             constexpr ErrContainer<ErrType> asErr() && noexcept
                 requires(!std::is_reference_v<ErrType>)
             {
-                return Err(std::get<1>(std::move(m_data)));
+                return Err(std::move(*std::get_if<1>(&m_data)));
             }
 
             constexpr ErrContainer<ErrType> asErr() const& noexcept
                 requires(!std::is_reference_v<ErrType>)
             {
-                return Err(static_cast<ErrType>(std::get<1>(m_data)));
+                return Err(static_cast<ErrType>(*std::get_if<1>(&m_data)));
             }
 
             constexpr ErrContainer<ErrType&> asErr() && noexcept
                 requires(std::is_reference_v<ErrType>)
             {
-                return Err(std::get<1>(m_data).get());
+                return Err(std::get_if<1>(&m_data)->get());
             }
 
             constexpr ErrContainer<ErrType&> asErr() const& noexcept
                 requires(std::is_reference_v<ErrType>)
             {
-                return Err(std::get<1>(m_data).get());
+                return Err(std::get_if<1>(&m_data)->get());
             }
 
             /// @brief Returns true if the Result is Ok
@@ -797,7 +797,7 @@ namespace geode {
             /// @throw UnwrapException if the Result is Err
             constexpr void unwrap() {
                 if (isErr()) {
-                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, std::get<1>(m_data)));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, *std::get_if<1>(&m_data)));
                 }
             }
 
@@ -805,11 +805,11 @@ namespace geode {
             /// @throw UnwrapException if the Result is Ok
             /// @return the Err value
             constexpr ErrType&& unwrapErr() && {
-                if (isErr()) {
-                    return std::get<1>(std::move(m_data));
+                if (auto* ptr = std::get_if<1>(&m_data)) {
+                    return std::move(*ptr);
                 }
                 else {
-                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, std::get<0>(m_data)));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, *std::get_if<0>(&m_data)));
                 }
             }
 
@@ -817,11 +817,11 @@ namespace geode {
             /// @throw UnwrapException if the Result is Ok
             /// @return the Err value
             constexpr ErrType& unwrapErr() & {
-                if (isErr()) {
-                    return std::get<1>(m_data);
+                if (auto* ptr = std::get_if<1>(&m_data)) {
+                    return *ptr;
                 }
                 else {
-                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, std::get<0>(m_data)));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, *std::get_if<0>(&m_data)));
                 }
             }
 
@@ -829,11 +829,11 @@ namespace geode {
             /// @throw UnwrapException if the Result is Ok
             /// @return the Err value
             constexpr ErrType const& unwrapErr() const& {
-                if (isErr()) {
-                    return std::get<1>(m_data);
+                if (auto* ptr = std::get_if<1>(&m_data)) {
+                    return *ptr;
                 }
                 else {
-                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, std::get<0>(m_data)));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, *std::get_if<0>(&m_data)));
                 }
             }
 
@@ -852,8 +852,8 @@ namespace geode {
         protected:
             constexpr void inspectInternalErr(std::invocable<ErrType const&> auto&& operation) const
                 noexcept(noexcept(operation(std::declval<ErrType const&>()))) {
-                if (this->isErr()) {
-                    operation(std::get<1>(m_data));
+                if (auto* ptr = std::get_if<1>(&m_data)) {
+                    operation(*ptr);
                 }
             }
         };
@@ -888,25 +888,25 @@ namespace geode {
             constexpr OkContainer<OkType> asOk() && noexcept
                 requires(!std::is_reference_v<OkType>)
             {
-                return Ok(std::get<0>(std::move(m_data)));
+                return Ok(std::move(*std::get_if<0>(&m_data)));
             }
 
             constexpr OkContainer<OkType> asOk() const& noexcept
                 requires(!std::is_reference_v<OkType>)
             {
-                return Ok(static_cast<OkType>(std::get<0>(m_data)));
+                return Ok(static_cast<OkType>(*std::get_if<0>(&m_data)));
             }
 
             constexpr OkContainer<OkType&> asOk() && noexcept
                 requires(std::is_reference_v<OkType>)
             {
-                return Ok(std::get<0>(m_data).get());
+                return Ok(std::get_if<0>(&m_data)->get());
             }
 
             constexpr OkContainer<OkType&> asOk() const& noexcept
                 requires(std::is_reference_v<OkType>)
             {
-                return Ok(std::get<0>(m_data).get());
+                return Ok(std::get_if<0>(&m_data)->get());
             }
 
             constexpr ErrContainer<void> asErr() const noexcept {
@@ -929,11 +929,11 @@ namespace geode {
             /// @throw UnwrapException if the Result is Err
             /// @return the Ok value
             constexpr OkType&& unwrap() && {
-                if (isOk()) {
-                    return std::get<0>(std::move(m_data));
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    return std::move(*ptr);
                 }
                 else {
-                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, std::get<1>(m_data)));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, *std::get_if<1>(&m_data)));
                 }
             }
 
@@ -941,11 +941,11 @@ namespace geode {
             /// @throw UnwrapException if the Result is Err
             /// @return the Ok value
             constexpr OkType& unwrap() & {
-                if (isOk()) {
-                    return std::get<0>(m_data);
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    return *ptr;
                 }
                 else {
-                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, std::get<1>(m_data)));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, *std::get_if<1>(&m_data)));
                 }
             }
 
@@ -953,11 +953,11 @@ namespace geode {
             /// @throw UnwrapException if the Result is Err
             /// @return the Ok value
             constexpr OkType const& unwrap() const& {
-                if (isOk()) {
-                    return std::get<0>(m_data);
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    return *ptr;
                 }
                 else {
-                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, std::get<1>(m_data)));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, *std::get_if<1>(&m_data)));
                 }
             }
 
@@ -966,7 +966,7 @@ namespace geode {
             /// @return the Err value
             constexpr void unwrapErr() {
                 if (isOk()) {
-                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, std::get<0>(m_data)));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, *std::get_if<0>(&m_data)));
                 }
             }
 
@@ -984,8 +984,8 @@ namespace geode {
             ) && noexcept(std::is_nothrow_default_constructible_v<OkType> && std::is_nothrow_move_constructible_v<OkType>)
                 requires std::default_initializable<OkType>
             {
-                if (isOk()) {
-                    return std::get<0>(std::move(m_data));
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    return std::move(*ptr);
                 }
                 else {
                     return OkType();
@@ -998,8 +998,8 @@ namespace geode {
             ) const& noexcept(std::is_nothrow_default_constructible_v<OkType> && std::is_nothrow_move_constructible_v<OkType>)
                 requires std::default_initializable<OkType>
             {
-                if (isOk()) {
-                    return std::get<0>(m_data);
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    return *ptr;
                 }
                 else {
                     return OkType();
@@ -1013,8 +1013,8 @@ namespace geode {
             ) && noexcept(std::is_nothrow_move_constructible_v<OkType>)
                 requires std::constructible_from<OkType, decltype(defaultValue)>
             {
-                if (isOk()) {
-                    return std::get<0>(std::move(m_data));
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    return std::move(*ptr);
                 }
                 else {
                     return defaultValue;
@@ -1028,8 +1028,8 @@ namespace geode {
             ) const& noexcept(std::is_nothrow_move_constructible_v<OkType>)
                 requires std::constructible_from<OkType, decltype(defaultValue)>
             {
-                if (isOk()) {
-                    return std::get<0>(m_data);
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    return *ptr;
                 }
                 else {
                     return defaultValue;
@@ -1044,8 +1044,8 @@ namespace geode {
             ) && noexcept(std::is_nothrow_invocable_v<decltype(operation)>)
                 requires std::constructible_from<OkType, std::invoke_result_t<decltype(operation)>>
             {
-                if (isOk()) {
-                    return std::get<0>(std::move(m_data));
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    return std::move(*ptr);
                 }
                 else {
                     return operation();
@@ -1060,8 +1060,8 @@ namespace geode {
             ) const& noexcept(std::is_nothrow_invocable_v<decltype(operation)>)
                 requires std::constructible_from<OkType, std::invoke_result_t<decltype(operation)>>
             {
-                if (isOk()) {
-                    return std::get<0>(m_data);
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    return *ptr;
                 }
                 else {
                     return operation();
@@ -1077,8 +1077,8 @@ namespace geode {
         protected:
             constexpr void inspectInternal(std::invocable<OkType const&> auto&& operation) const
                 noexcept(noexcept(operation(std::declval<OkType const&>()))) {
-                if (this->isOk()) {
-                    operation(std::get<0>(m_data));
+                if (auto* ptr = std::get_if<0>(&m_data)) {
+                    operation(*ptr);
                 }
             }
         };
@@ -1121,7 +1121,7 @@ namespace geode {
             /// @throw UnwrapException if the Result is Err
             constexpr void unwrap() {
                 if (isErr()) {
-                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, std::get<1>(m_data)));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(ErrTag{}, *std::get_if<1>(&m_data)));
                 }
             }
 
@@ -1130,7 +1130,7 @@ namespace geode {
             /// @return the Err value
             constexpr void unwrapErr() {
                 if (isOk()) {
-                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, std::get<0>(m_data)));
+                    GEODE_RESULT_IMPL_THROW(UnwrapException(OkTag{}, *std::get_if<0>(&m_data)));
                 }
             }
 
@@ -1278,10 +1278,10 @@ namespace geode {
         template <class OkType2, class ErrType2>
         constexpr bool operator==(Result<OkType2, ErrType2> const& other) const noexcept {
             if (this->isOk() && other.isOk()) {
-                return std::get<0>(this->m_data) == std::get<0>(other.m_data);
+                return *std::get_if<0>(&this->m_data) == *std::get_if<0>(&other.m_data);
             }
             else if (this->isErr() && other.isErr()) {
-                return std::get<1>(this->m_data) == std::get<1>(other.m_data);
+                return *std::get_if<1>(&this->m_data) == *std::get_if<1>(&other.m_data);
             }
             return false;
         }
@@ -1291,8 +1291,8 @@ namespace geode {
         /// @return true if the Result is Ok and the Ok value is equal
         template <class OkType2>
         constexpr bool operator==(impl::OkContainer<OkType2> const& other) const noexcept {
-            if (this->isOk()) {
-                return std::get<0>(this->m_data) == other.m_ok;
+            if (auto* ptr = std::get_if<0>(&this->m_data)) {
+                return *ptr == other.m_ok;
             }
             return false;
         }
@@ -1302,8 +1302,8 @@ namespace geode {
         /// @return true if the Result is Err and the Err value is equal
         template <class ErrType2>
         constexpr bool operator==(impl::ErrContainer<ErrType2> const& other) const noexcept {
-            if (this->isErr()) {
-                return std::get<1>(this->m_data) == other.m_err;
+            if (auto* ptr = std::get_if<1>(&this->m_data)) {
+                return *ptr == other.m_err;
             }
             return false;
         }
@@ -1973,11 +1973,11 @@ namespace geode {
 
         template <class OkType, class ErrType>
         constexpr Result<OkType&, ErrType&> ResultData<OkType, ErrType>::asRef() noexcept {
-            if (this->isOk()) {
-                return Ok(std::get<0>(m_data));
+            if (auto* ptr = std::get_if<0>(&m_data)) {
+                return Ok(*ptr);
             }
             else {
-                return Err(std::get<1>(m_data));
+                return Err(*std::get_if<1>(&m_data));
             }
         }
 
@@ -1987,14 +1987,14 @@ namespace geode {
                 return Ok();
             }
             else {
-                return Err(std::get<1>(m_data));
+                return Err(*std::get_if<1>(&m_data));
             }
         }
 
         template <class OkType>
         constexpr Result<OkType&, void> ResultData<OkType, void>::asRef() noexcept {
-            if (this->isOk()) {
-                return Ok(std::get<0>(m_data));
+            if (auto* ptr = std::get_if<0>(&m_data)) {
+                return Ok(*ptr);
             }
             else {
                 return Err();
@@ -2013,11 +2013,11 @@ namespace geode {
         template <class OkType, class ErrType>
         constexpr Result<OkType const&, ErrType const&> ResultData<OkType, ErrType>::asConst(
         ) const noexcept {
-            if (this->isOk()) {
-                return Ok(std::get<0>(m_data));
+            if (auto* ptr = std::get_if<0>(&m_data)) {
+                return Ok(*ptr);
             }
             else {
-                return Err(std::get<1>(m_data));
+                return Err(*std::get_if<1>(&m_data));
             }
         }
 
@@ -2027,14 +2027,14 @@ namespace geode {
                 return Ok();
             }
             else {
-                return Err(std::get<1>(m_data));
+                return Err(*std::get_if<1>(&m_data));
             }
         }
 
         template <class OkType>
         constexpr Result<OkType const&, void> ResultData<OkType, void>::asConst() const noexcept {
-            if (this->isOk()) {
-                return Ok(std::get<0>(m_data));
+            if (auto* ptr = std::get_if<0>(&m_data)) {
+                return Ok(*ptr);
             }
             else {
                 return Err();
@@ -2055,11 +2055,11 @@ namespace geode {
         ) const noexcept(std::is_nothrow_copy_constructible_v<OkType>)
             requires(std::is_reference_v<OkType>)
         {
-            if (this->isOk()) {
-                return Ok(std::get<0>(m_data).get());
+            if (auto* ptr = std::get_if<0>(&m_data)) {
+                return Ok(ptr->get());
             }
             else {
-                return Err(std::get<1>(m_data));
+                return Err(*std::get_if<1>(&m_data));
             }
         }
 
@@ -2069,7 +2069,7 @@ namespace geode {
                 return Ok();
             }
             else {
-                return Err(std::get<1>(m_data));
+                return Err(*std::get_if<1>(&m_data));
             }
         }
 
@@ -2078,8 +2078,8 @@ namespace geode {
             noexcept(std::is_nothrow_copy_constructible_v<OkType>)
             requires(std::is_reference_v<OkType>)
         {
-            if (this->isOk()) {
-                return Ok(std::get<0>(m_data).get());
+            if (auto* ptr = std::get_if<0>(&m_data)) {
+                return Ok(ptr->get());
             }
             else {
                 return Err();
