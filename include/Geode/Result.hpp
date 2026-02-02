@@ -18,29 +18,45 @@
     #define GEODE_CONCAT(x, y) GEODE_CONCAT2(x, y)
 #endif
 
-#if !defined(GEODE_UNWRAP)
+#if !defined(GEODE_UNWRAP_BASE)
     // Use gcc's scope expression feature, which makes this macro
     // really nice to use. Unfortunately not available on MSVC
     #if defined(__GNUC__) || defined(__clang__)
-        #define GEODE_UNWRAP(...)                                                          \
+        #define GEODE_UNWRAP_BASE(Return_, ...)                                            \
             ({                                                                             \
                 auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                            \
                 if (GEODE_CONCAT(res, __LINE__).isErr())                                   \
-                    return std::move(GEODE_CONCAT(res, __LINE__)).asErr();                 \
+                    Return_ std::move(GEODE_CONCAT(res, __LINE__)).asErr();                \
                 std::move(GEODE_CONCAT(res, __LINE__)).unwrap();                           \
             })
     #else
-        #define GEODE_UNWRAP(...) \
-            if (auto res = __VA_ARGS__; res.isErr()) return std::move(res).asErr()
+        #define GEODE_UNWRAP_BASE(Return_, ...) \
+            if (auto res = __VA_ARGS__; res.isErr()) Return_ std::move(res).asErr()
     #endif
 #endif
 
-#if !defined(GEODE_UNWRAP_INTO)
-    #define GEODE_UNWRAP_INTO(variable, ...)                                       \
+#if !defined(GEODE_UNWRAP_INTO_BASE)
+    #define GEODE_UNWRAP_INTO_BASE(Return_, variable, ...)                         \
         auto GEODE_CONCAT(res, __LINE__) = __VA_ARGS__;                            \
         if (GEODE_CONCAT(res, __LINE__).isErr())                                   \
-            return std::move(GEODE_CONCAT(res, __LINE__)).asErr();                 \
+            Return_ std::move(GEODE_CONCAT(res, __LINE__)).asErr();                \
         variable = std::move(GEODE_CONCAT(res, __LINE__)).unwrap()
+#endif
+
+#if !defined(GEODE_UNWRAP)
+    #define GEODE_UNWRAP(...) GEODE_UNWRAP_BASE(return, __VA_ARGS__)
+#endif
+
+#if !defined(GEODE_UNWRAP_INTO)
+    #define GEODE_UNWRAP_INTO(...) GEODE_UNWRAP_INTO_BASE(return, __VA_ARGS__)
+#endif
+
+#if !defined(GEODE_CO_UNWRAP)
+    #define GEODE_CO_UNWRAP(...) GEODE_UNWRAP_BASE(co_return, __VA_ARGS__)
+#endif
+
+#if !defined(GEODE_CO_UNWRAP_INTO)
+    #define GEODE_CO_UNWRAP_INTO(...) GEODE_UNWRAP_INTO_BASE(co_return, __VA_ARGS__)
 #endif
 
 #if !defined(GEODE_UNWRAP_IF_OK)
