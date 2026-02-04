@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
 cmake_policy(SET CMP0097 NEW)
 
-project(GeodeResult VERSION 1.3.4 LANGUAGES C CXX)
+project(GeodeResult VERSION 1.4.1 LANGUAGES C CXX)
 
 add_library(GeodeResult INTERFACE)
 
