@@ -48,7 +48,7 @@
 #endif
 
 #if !defined(GEODE_UNWRAP_INTO)
-    #define GEODE_UNWRAP_INTO(...) GEODE_UNWRAP_INTO_BASE(return, __VA_ARGS__)
+    #define GEODE_UNWRAP_INTO(variable, ...) GEODE_UNWRAP_INTO_BASE(return, variable, __VA_ARGS__)
 #endif
 
 #if !defined(GEODE_CO_UNWRAP)
@@ -56,7 +56,7 @@
 #endif
 
 #if !defined(GEODE_CO_UNWRAP_INTO)
-    #define GEODE_CO_UNWRAP_INTO(...) GEODE_UNWRAP_INTO_BASE(co_return, __VA_ARGS__)
+    #define GEODE_CO_UNWRAP_INTO(variable, ...) GEODE_UNWRAP_INTO_BASE(co_return, variable, __VA_ARGS__)
 #endif
 
 #if !defined(GEODE_UNWRAP_IF_OK)
