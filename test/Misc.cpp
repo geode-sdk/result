@@ -240,6 +240,15 @@ TEST_CASE("Misc") {
         GEODE_UNWRAP_OR_ELSE(value2, err, divideConstexpr(32, 0)) {
             REQUIRE(err == -1);
         }
+
+        GEODE_UNWRAP_OR_ELSE(value3, err2, divideVoidOkVoidErr(32, 0)) {
+            REQUIRE(true);
+        }
+
+        GEODE_UNWRAP_OR_ELSE(value4, err2, divideVoidOkVoidErr(32, 2)) {
+            FAIL("Expected the block to not be executed");
+        }
+        REQUIRE(true);
     }
 
     SECTION("Unwrap Either") {
