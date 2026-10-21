@@ -532,10 +532,87 @@ namespace geode {
     };
 
     namespace impl {
+        template <class Type>
+        using ProtectedType = std::conditional_t<
+            std::is_reference_v<Type>,
+            std::reference_wrapper<std::remove_reference_t<Type>>, Type>;
+
+        template <class Type>
+        using NothrowTraitType = std::conditional_t<std::is_void_v<Type>, std::monostate, ProtectedType<Type>>;
+
+        template <class SrcOk, class SrcErr, class DstOk, class DstErr>
+        inline constexpr bool NothrowMoveConvertible =
+            std::is_nothrow_constructible_v<NothrowTraitType<DstOk>, NothrowTraitType<SrcOk>&&>
+            && std::is_nothrow_constructible_v<NothrowTraitType<DstErr>, NothrowTraitType<SrcErr>&&>;
+
+        template <class SrcOk, class SrcErr, class DstOk, class DstErr>
+        inline constexpr bool NothrowCopyConvertible =
+            std::is_nothrow_constructible_v<NothrowTraitType<DstOk>, NothrowTraitType<SrcOk> const&>
+            && std::is_nothrow_constructible_v<NothrowTraitType<DstErr>, NothrowTraitType<SrcErr> const&>;
+
+        template <class SrcOk, class SrcErr, class DstOk, class DstErr>
+        struct VariantCast {
+            static auto cast(const std::variant<SrcOk, SrcErr>& src) {
+                if (auto first = std::get_if<0>(&src)) {
+                    return std::variant<DstOk, DstErr>(std::in_place_index<0>, static_cast<DstOk>(*first));
+                }
+                auto second = std::get_if<1>(&src);
+                return std::variant<DstOk, DstErr>(std::in_place_index<1>, static_cast<DstErr>(*second));
+            }
+
+            static auto cast(std::variant<SrcOk, SrcErr>&& src) {
+                if (auto first = std::get_if<0>(&src)) {
+                    return std::variant<DstOk, DstErr>(std::in_place_index<0>, static_cast<DstOk>(std::move(*first)));
+                }
+                auto second = std::get_if<1>(&src);
+                return std::variant<DstOk, DstErr>(std::in_place_index<1>, static_cast<DstErr>(std::move(*second)));
+            }
+        };
+
+        template <class SrcErr, class DstErr>
+        struct VariantCast<void, SrcErr, void, DstErr> {
+            static auto cast(const std::variant<std::monostate, SrcErr>& src) {
+                if (std::holds_alternative<std::monostate>(src)) {
+                    return std::variant<std::monostate, DstErr>(std::in_place_index<0>);
+                }
+                auto second = std::get_if<1>(&src);
+                return std::variant<std::monostate, DstErr>(std::in_place_index<1>, static_cast<DstErr>(*second));
+            }
+
+            static auto cast(std::variant<std::monostate, SrcErr>&& src) {
+                if (std::holds_alternative<std::monostate>(src)) {
+                    return std::variant<std::monostate, DstErr>(std::in_place_index<0>);
+                }
+                auto second = std::get_if<1>(&src);
+                return std::variant<std::monostate, DstErr>(std::in_place_index<1>, static_cast<DstErr>(std::move(*second)));
+            }
+        };
+
+        template <class SrcOk, class DstOk>
+        struct VariantCast<SrcOk, void, DstOk, void> {
+            static auto cast(const std::variant<SrcOk, std::monostate>& src) {
+                if (std::holds_alternative<std::monostate>(src)) {
+                    return std::variant<DstOk, std::monostate>(std::in_place_index<1>);
+                }
+                auto first = std::get_if<0>(&src);
+                return std::variant<DstOk, std::monostate>(std::in_place_index<0>, static_cast<DstOk>(*first));
+            }
+
+            static auto cast(std::variant<SrcOk, std::monostate>&& src) {
+                if (std::holds_alternative<std::monostate>(src)) {
+                    return std::variant<DstOk, std::monostate>(std::in_place_index<1>);
+                }
+                auto first = std::get_if<0>(&src);
+                return std::variant<DstOk, std::monostate>(std::in_place_index<0>, static_cast<DstOk>(std::move(*first)));
+            }
+        };
 
         template <class OkType, class ErrType>
         class ResultData {
         protected:
+            template <typename OkType2, typename ErrType2>
+            friend class ResultData;
+
             using ProtectedOkType = std::conditional_t<
                 std::is_reference_v<OkType>,
                 std::reference_wrapper<std::remove_reference_t<OkType>>, OkType>;
@@ -552,13 +629,15 @@ namespace geode {
             ) noexcept(Index == 0 ? std::is_nothrow_constructible_v<ProtectedOkType, ClassType> : std::is_nothrow_constructible_v<ProtectedErrType, ClassType>) :
                 m_data(index, std::move(ok)) {}
 
-            constexpr ResultData(ResultData&& other
-            ) noexcept(std::is_nothrow_move_constructible_v<ProtectedOkType> && std::is_nothrow_move_constructible_v<ProtectedErrType>) :
-                m_data(std::move(other.m_data)) {}
+            template <class OkType2, class ErrType2>
+            constexpr ResultData(ResultData<OkType2, ErrType2>&& other
+            ) noexcept(NothrowMoveConvertible<OkType2, ErrType2, OkType, ErrType>) :
+                m_data(VariantCast<ProtectedType<OkType2>, ProtectedType<ErrType2>, ProtectedOkType, ProtectedErrType>::cast(std::move(other.m_data))) {}
 
-            constexpr ResultData(ResultData const& other
-            ) noexcept(std::is_nothrow_copy_constructible_v<ProtectedOkType> && std::is_nothrow_copy_constructible_v<ProtectedErrType>) :
-                m_data(other.m_data) {}
+            template <class OkType2, class ErrType2>
+            constexpr ResultData(ResultData<OkType2, ErrType2> const& other
+            ) noexcept(NothrowCopyConvertible<OkType2, ErrType2, OkType, ErrType>) :
+                m_data(VariantCast<ProtectedType<OkType2>, ProtectedType<ErrType2>, ProtectedOkType, ProtectedErrType>::cast(other.m_data)) {}
         public:
             constexpr OkContainer<OkType> asOk() && noexcept
                 requires(!std::is_reference_v<OkType>)
@@ -815,6 +894,9 @@ namespace geode {
         template <class ErrType>
         class ResultData<void, ErrType> {
         protected:
+            template <typename OkType2, typename ErrType2>
+            friend class ResultData;
+
             using ProtectedErrType = std::conditional_t<
                 std::is_reference_v<ErrType>,
                 std::reference_wrapper<std::remove_reference_t<ErrType>>, ErrType>;
@@ -830,13 +912,15 @@ namespace geode {
             template <std::size_t Index>
             constexpr ResultData(std::in_place_index_t<Index> index) noexcept : m_data(index) {}
 
-            constexpr ResultData(ResultData&& other
-            ) noexcept(std::is_nothrow_move_constructible_v<ProtectedErrType>) :
-                m_data(std::move(other.m_data)) {}
+            template <class ErrType2>
+            constexpr ResultData(ResultData<void, ErrType2>&& other
+            ) noexcept(NothrowMoveConvertible<void, ErrType2, void, ErrType>) :
+                m_data(VariantCast<void, ProtectedType<ErrType2>, void, ProtectedErrType>::cast(std::move(other.m_data))) {}
 
-            constexpr ResultData(ResultData const& other
-            ) noexcept(std::is_nothrow_copy_constructible_v<ProtectedErrType>) :
-                m_data(other.m_data) {}
+            template <class ErrType2>
+            constexpr ResultData(ResultData<void, ErrType2> const& other
+            ) noexcept(NothrowCopyConvertible<void, ErrType2, void, ErrType>) :
+                m_data(VariantCast<void, ProtectedType<ErrType2>, void, ProtectedErrType>::cast(other.m_data)) {}
 
         public:
             constexpr OkContainer<void> asOk() const noexcept {
@@ -947,6 +1031,9 @@ namespace geode {
         template <class OkType>
         class ResultData<OkType, void> {
         protected:
+            template <typename OkType2, typename ErrType2>
+            friend class ResultData;
+
             using ProtectedOkType = std::conditional_t<
                 std::is_reference_v<OkType>,
                 std::reference_wrapper<std::remove_reference_t<OkType>>, OkType>;
@@ -962,13 +1049,15 @@ namespace geode {
             template <std::size_t Index>
             constexpr ResultData(std::in_place_index_t<Index> index) noexcept : m_data(index) {}
 
-            constexpr ResultData(ResultData&& other
-            ) noexcept(std::is_nothrow_move_constructible_v<ProtectedOkType>) :
-                m_data(std::move(other.m_data)) {}
+            template <class OkType2>
+            constexpr ResultData(ResultData<OkType2, void>&& other
+            ) noexcept(NothrowMoveConvertible<OkType2, void, OkType, void>) :
+                m_data(VariantCast<ProtectedType<OkType2>, void, ProtectedOkType, void>::cast(std::move(other.m_data))) {}
 
-            constexpr ResultData(ResultData const& other
-            ) noexcept(std::is_nothrow_copy_constructible_v<ProtectedOkType>) :
-                m_data(other.m_data) {}
+            template <class OkType2>
+            constexpr ResultData(ResultData<OkType2, void> const& other
+            ) noexcept(NothrowCopyConvertible<OkType2, void, OkType, void>) :
+                m_data(VariantCast<ProtectedType<OkType2>, void, ProtectedOkType, void>::cast(other.m_data)) {}
 
         public:
             constexpr OkContainer<OkType> asOk() && noexcept
@@ -1172,6 +1261,9 @@ namespace geode {
         template <>
         class ResultData<void, void> {
         protected:
+            template <typename OkType2, typename ErrType2>
+            friend class ResultData;
+
             std::variant<std::monostate, std::monostate> m_data;
 
             template <std::size_t Index>
@@ -1252,12 +1344,15 @@ namespace geode {
                                ResultData<OkType, ErrType>, std::in_place_index_t<1>, ErrType2>) :
                 ResultData<OkType, ErrType>(std::in_place_index<1>, std::move(err).unwrap()) {}
 
-            constexpr ResultDataWrapper(ResultDataWrapper&& other
-            ) noexcept(std::is_nothrow_move_constructible_v<ResultData<OkType, ErrType>>) :
+
+            template <class OkType2, class ErrType2>
+            constexpr ResultDataWrapper(ResultDataWrapper<OkType2, ErrType2>&& other
+            ) noexcept(NothrowMoveConvertible<OkType2, ErrType2, OkType, ErrType>) :
                 ResultData<OkType, ErrType>(std::move(other)) {}
 
-            constexpr ResultDataWrapper(ResultDataWrapper const& other
-            ) noexcept(std::is_nothrow_copy_constructible_v<ResultData<OkType, ErrType>>) :
+            template <class OkType2, class ErrType2>
+            constexpr ResultDataWrapper(ResultDataWrapper<OkType2, ErrType2> const& other
+            ) noexcept(NothrowCopyConvertible<OkType2, ErrType2, OkType, ErrType>) :
                 ResultData<OkType, ErrType>(other) {}
         };
 
@@ -1275,12 +1370,14 @@ namespace geode {
                                                                        std::in_place_index_t<1>>) :
                 ResultData<OkType, void>(std::in_place_index<1>) {}
 
-            constexpr ResultDataWrapper(ResultDataWrapper&& other
-            ) noexcept(std::is_nothrow_move_constructible_v<ResultData<OkType, void>>) :
+            template <class OkType2>
+            constexpr ResultDataWrapper(ResultDataWrapper<OkType2, void>&& other
+            ) noexcept(NothrowMoveConvertible<OkType2, void, OkType, void>) :
                 ResultData<OkType, void>(std::move(other)) {}
 
-            constexpr ResultDataWrapper(ResultDataWrapper const& other
-            ) noexcept(std::is_nothrow_copy_constructible_v<ResultData<OkType, void>>) :
+            template <class OkType2>
+            constexpr ResultDataWrapper(ResultDataWrapper<OkType2, void> const& other
+            ) noexcept(NothrowCopyConvertible<OkType2, void, OkType, void>) :
                 ResultData<OkType, void>(other) {}
         };
 
@@ -1300,12 +1397,14 @@ namespace geode {
                                                                       std::in_place_index_t<0>>) :
                 ResultData<void, ErrType>(std::in_place_index<0>) {}
 
-            constexpr ResultDataWrapper(ResultDataWrapper&& other
-            ) noexcept(std::is_nothrow_move_constructible_v<ResultData<void, ErrType>>) :
+            template <class ErrType2>
+            constexpr ResultDataWrapper(ResultDataWrapper<void, ErrType2>&& other
+            ) noexcept(NothrowMoveConvertible<void, ErrType2, void, ErrType>) :
                 ResultData<void, ErrType>(std::move(other)) {}
 
-            constexpr ResultDataWrapper(ResultDataWrapper const& other
-            ) noexcept(std::is_nothrow_copy_constructible_v<ResultData<void, ErrType>>) :
+            template <class ErrType2>
+            constexpr ResultDataWrapper(ResultDataWrapper<void, ErrType2> const& other
+            ) noexcept(NothrowCopyConvertible<void, ErrType2, void, ErrType>) :
                 ResultData<void, ErrType>(other) {}
         };
 
@@ -1334,13 +1433,17 @@ namespace geode {
         using impl::ResultDataWrapper<OkType, ErrType>::ResultDataWrapper;
 
         Result() = delete;
+        Result(Result const&) = default;
+        Result(Result&&) = default;
 
-        Result(Result const& other
-        ) noexcept(std::is_nothrow_copy_constructible_v<impl::ResultData<OkType, ErrType>>) :
+        template <class OkType2, class ErrType2>
+        Result(Result<OkType2, ErrType2> const& other
+        ) noexcept(impl::NothrowCopyConvertible<OkType2, ErrType2, OkType, ErrType>) :
             impl::ResultDataWrapper<OkType, ErrType>(other) {}
 
-        constexpr Result(Result&& other
-        ) noexcept(std::is_nothrow_move_constructible_v<impl::ResultData<OkType, ErrType>>) :
+        template <class OkType2, class ErrType2>
+        constexpr Result(Result<OkType2, ErrType2>&& other
+        ) noexcept(impl::NothrowMoveConvertible<OkType2, ErrType2, OkType, ErrType>) :
             impl::ResultDataWrapper<OkType, ErrType>(std::move(other)) {}
 
         constexpr Result& operator=(Result&& other

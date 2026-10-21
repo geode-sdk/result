@@ -12,7 +12,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 
-add_executable(GeodeResultTests 
+add_executable(GeodeResultTests
+	Convert.cpp
 	Misc.cpp
 	MoveOnly.cpp
 	Normal.cpp
