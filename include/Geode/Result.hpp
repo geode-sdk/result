@@ -607,6 +607,18 @@ namespace geode {
             }
         };
 
+        // transparent conversion for identical types
+        template <class OkType, class ErrType>
+        struct VariantCast<OkType, ErrType, OkType, ErrType> {
+            static auto cast(const std::variant<OkType, ErrType>& src) {
+                return src;
+            }
+
+            static auto cast(std::variant<OkType, ErrType>&& src) {
+                return std::move(src);
+            }
+        };
+
         template <class OkType, class ErrType>
         class ResultData {
         protected:
