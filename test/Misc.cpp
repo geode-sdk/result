@@ -272,4 +272,19 @@ TEST_CASE("Misc") {
         REQUIRE(res.isOk());
         REQUIRE(*res == 16);
     }
+
+    SECTION("Macros with Ref") {
+        if (GEODE_UNWRAP_IF_OK(value, divideConstRefErrRef(32, 2))) {
+            REQUIRE(value == 16);
+        }
+
+        auto func = [] (int val1, int val2) -> Result<int> {
+            auto res = GEODE_UNWRAP(divideConstRefErrRef(val1, val2));
+            return Ok(res);
+        };
+
+        if (GEODE_UNWRAP_IF_OK(value, func(32, 2))) {
+            REQUIRE(value == 16);
+        }
+    }
 }

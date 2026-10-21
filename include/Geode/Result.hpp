@@ -130,7 +130,7 @@
     #define GEODE_UNWRAP_EITHER(okVariable, errVariable, ...)                                          \
         auto [okVariable, errVariable, GEODE_CONCAT(res, __LINE__)] = std::make_tuple(                 \
             geode::impl::ResultOkTypeVoidSafe<std::remove_cvref_t<decltype(__VA_ARGS__)>>{},           \
-            geode::impl::ResultOkTypeVoidSafe<std::remove_cvref_t<decltype(__VA_ARGS__)>>{},           \
+            geode::impl::ResultErrTypeVoidSafe<std::remove_cvref_t<decltype(__VA_ARGS__)>>{},           \
             (__VA_ARGS__)                                                                              \
         );                                                                                             \
         GEODE_CONCAT(res, __LINE__).isOk() &&                                                          \
@@ -250,11 +250,11 @@ namespace geode {
                 return m_ok;
             }
 
-            constexpr std::reference_wrapper<OkType> unwrapVoidSafe() && noexcept {
+            constexpr OkType& unwrapVoidSafe() && noexcept {
                 return m_ok;
             }
 
-            constexpr std::reference_wrapper<OkType> unwrapVoidSafe() const& noexcept {
+            constexpr OkType const& unwrapVoidSafe() const& noexcept {
                 return m_ok;
             }
 
@@ -340,11 +340,11 @@ namespace geode {
                 return m_err;
             }
 
-            constexpr std::reference_wrapper<ErrType> unwrapVoidSafe() && noexcept {
+            constexpr ErrType& unwrapVoidSafe() && noexcept {
                 return m_err;
             }
 
-            constexpr std::reference_wrapper<ErrType> unwrapVoidSafe() const& noexcept {
+            constexpr ErrType const& unwrapVoidSafe() const& noexcept {
                 return m_err;
             }
 
